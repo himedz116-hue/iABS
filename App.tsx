@@ -25,6 +25,7 @@ import { WordBuilder } from './components/WordBuilder';
 import { GlassBridgeV2 } from './components/GlassBridgeV2';
 import { FloorIsLava } from './components/FloorIsLava';
 import { EmojiCode } from './components/EmojiCode';
+import { HigherLowerGame } from './components/HigherLowerGame';
 import { MahmahGame } from './components/MahmahGame/MahmahGame';
 import { LetterHexagonGame } from './components/LetterHexagonGame';
 import { BuzzerPad } from './components/BuzzerPad';
@@ -458,6 +459,7 @@ const App: React.FC = () => {
       case 'GLASS_BRIDGE_V2': return <GlassBridgeV2 onHome={handleGoHome} isOBS={obsMode} />;
       case 'FLOOR_IS_LAVA': return <FloorIsLava onHome={handleGoHome} isOBS={obsMode} />;
       case 'EMOJI_CODE': return <EmojiCode onHome={handleGoHome} isOBS={obsMode} />;
+      case 'HIGHER_LOWER': return <HigherLowerGame onHome={handleGoHome} isOBS={obsMode} />;
       case 'MAHMAH_GAME': return <MahmahGame onBack={handleGoHome} />;
       case 'LETTER_GAME': return <LetterHexagonGame onHome={handleGoHome} isOBS={obsMode} onToggleOBSPreview={() => setShowObsPreview(!showObsPreview)} obsPreviewActive={showObsPreview} />;
       case 'BUZZER_PAD': return <BuzzerPad />;

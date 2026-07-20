@@ -54,10 +54,11 @@ export type ViewState =
   | 'FLOOR_IS_LAVA'
   | 'EMOJI_CODE'
   | 'LETTER_GAME'
+  | 'HIGHER_LOWER'
   | 'BUZZER_PAD';
 
 // Added GameType to fix import error in TournamentManager.tsx
-export type GameType = 'TRIVIA' | 'BLUR' | 'FLAGS' | 'TYPING' | 'CUPS' | 'GRID' | 'WHEEL' | 'PAINT' | 'BATTLE' | 'BOMB' | 'VOTE' | 'DRAW' | 'FRUIT' | 'LOGO' | 'FORBIDDEN' | 'BOSS' | 'ROULETTE' | 'ZOMBIE' | 'BRIDGE' | 'AUCTION' | 'LETTER';
+export type GameType = 'TRIVIA' | 'BLUR' | 'FLAGS' | 'TYPING' | 'CUPS' | 'GRID' | 'WHEEL' | 'PAINT' | 'BATTLE' | 'BOMB' | 'VOTE' | 'DRAW' | 'FRUIT' | 'LOGO' | 'FORBIDDEN' | 'BOSS' | 'ROULETTE' | 'ZOMBIE' | 'BRIDGE' | 'AUCTION' | 'LETTER' | 'HIGHER_LOWER';
 
 export interface LetterQuestion {
   id: number;
