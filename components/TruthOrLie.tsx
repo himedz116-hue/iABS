@@ -94,7 +94,7 @@ export const TruthOrLie: React.FC<TruthOrLieProps> = ({ onHome, isOBS = false })
     // --- Sync & Chat ---
     useEffect(() => {
         if (!isOBS) {
-            const kickChannel = localStorage.getItem('kick_channel_name') || 'hsg116';
+            const kickChannel = 'iabs';
             chatService.connect(kickChannel);
         }
 

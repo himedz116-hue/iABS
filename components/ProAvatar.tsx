@@ -61,12 +61,13 @@ export const ProAvatar: React.FC<ProAvatarProps> = ({
 
             // Database
             try {
-                const { data } = await supabase
+                const { data: rows } = await supabase
                     .from('profiles')
                     .select('avatar_url')
                     .ilike('username', uLower)
-                    .maybeSingle();
+                    .limit(1);
 
+                const data = rows?.[0];
                 if (data?.avatar_url) {
                     setSrc(data.avatar_url);
                     localStorage.setItem(`av_${uLower}`, data.avatar_url);
@@ -116,12 +117,13 @@ export const ProAvatar: React.FC<ProAvatarProps> = ({
 
             // Database sync
             try {
-                const { data } = await supabase
+                const { data: rows } = await supabase
                     .from('profiles')
                     .select('active_frame_url')
                     .ilike('username', uLower)
-                    .maybeSingle();
+                    .limit(1);
 
+                const data = rows?.[0];
                 const fresh = data?.active_frame_url || null;
                 if (frameCache[uLower] !== fresh) {
                     frameCache[uLower] = fresh;

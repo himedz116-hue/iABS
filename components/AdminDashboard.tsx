@@ -6,8 +6,9 @@ import {
   Megaphone, Activity, History, Settings, Users,
   Zap, Palette, Eye, EyeOff, RotateCw, Trophy,
   Music, Sparkles, Wind, Flame, Ticket, Fingerprint,
-  Users2, Gavel, Radio, LayoutDashboard, Terminal, X, Clock
+  Users2, Gavel, Radio, LayoutDashboard, Terminal, X, Clock, LogOut, ShoppingBag, Edit, Plus, Upload, Brain
 } from 'lucide-react';
+import { uploadToCloudinary } from '../services/cloudinaryService';
 import { leaderboardService, adminService, supabase } from '../services/supabase';
 import { chatService } from '../services/chatService';
 import { ProAvatar } from './ProAvatar';
@@ -17,12 +18,24 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'bans' | 'announcements' | 'arena' | 'promo' | 'logs' | 'system'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'bans' | 'announcements' | 'arena' | 'promo' | 'logs' | 'system' | 'store' | 'mahmah'>('overview');
   const [profiles, setProfiles] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [promoCodes, setPromoCodes] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [arenaStatus, setArenaStatus] = useState<any>({});
+  const [storeItems, setStoreItems] = useState<any[]>([]);
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [mahmahCategories, setMahmahCategories] = useState<any[]>([]);
+  const [mahmahQuestions, setMahmahQuestions] = useState<any[]>([]);
+  const [selectedMahmahCategory, setSelectedMahmahCategory] = useState<any>(null);
+  const [isAddingMahmahCategory, setIsAddingMahmahCategory] = useState(false);
+  const [isAddingMahmahQuestion, setIsAddingMahmahQuestion] = useState(false);
+  const [newMahmahCategory, setNewMahmahCategory] = useState({ name: '', image_url: '' });
+  const [newMahmahQuestion, setNewMahmahQuestion] = useState({ points: 100, text: '', answer: '' });
+  const [showInactive, setShowInactive] = useState(false);
 
   const [targetUser, setTargetUser] = useState('');
   const [pointDelta, setPointDelta] = useState(100);
@@ -85,7 +98,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   }, []);
 
   useEffect(() => {
-    const channel = localStorage.getItem('kick_channel_name') || 'iabs';
+    const channel = 'iabs';
     chatService.connect(channel);
     setChatMonitorActive(true);
     const unbindStatus = chatService.onStatusChange((connected, error, details) => {
@@ -135,6 +148,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
       if (activeTab === 'announcements') { const { data } = await adminService.getAnnouncements(); setAnnouncements(data); }
       if (activeTab === 'logs') { const { data } = await adminService.getAuditLogs(); setLogs(data); }
       if (activeTab === 'arena') { const { status } = await adminService.getArenaStatus(); setArenaStatus(status); }
+      if (activeTab === 'store') { const { data } = await supabase.from('store_items').select('*').order('type', { ascending: true }).order('price', { ascending: true }); setStoreItems(data || []); }
+      if (activeTab === 'mahmah') {
+        const { data: cData } = await supabase.from('mahmah_categories').select('*').order('created_at', { ascending: false });
+        if (cData) setMahmahCategories(cData);
+        const { data: qData } = await supabase.from('mahmah_questions').select('*').order('created_at', { ascending: true });
+        if (qData) setMahmahQuestions(qData);
+      }
     } catch (e) { console.error(e); }
     setIsLoading(false);
   };
@@ -168,15 +188,110 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   };
 
   const handleToggleBan = async (username: string, currentBan: boolean) => {
+    if (!currentBan) {
+      if (!confirm(`تحذير خطير: هل أنت متأكد من حظر وحذف وتصفير جميع بيانات ${username} نهائياً؟`)) return;
+      // Delete completely from leaderboard
+      await supabase.from('leaderboard').delete().ilike('username', username);
+      // Zero out credits
+      await supabase.from('profiles').update({ credits: 0 }).ilike('username', username);
+    }
     const { error } = await adminService.toggleUserBan(username, !currentBan, banReason);
     if (error) showStatus('خطأ في العملية', true);
-    else { showStatus(currentBan ? `تم فك حظر ${username}` : `تم حظر ${username} بنجاح`); fetchData(); }
+    else { showStatus(currentBan ? `تم فك حظر ${username}` : `تم حظر ${username} وتدمير سجلاته بالكامل`); fetchData(); }
   };
 
   const updateArena = async (key: string, value: any) => {
     const { error } = await adminService.updateArenaStatus(key, value);
     if (error) showStatus('فشل التحديث', true);
     else { showStatus('تم تحديث إعدادات الساحة'); fetchData(); }
+  };
+
+  const handleSaveStoreItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem) return;
+    setIsLoading(true);
+    
+    if (editingItem.id) {
+      const { error } = await supabase.from('store_items').update({
+        name: editingItem.name,
+        description: editingItem.description,
+        price: editingItem.price,
+        image_url: editingItem.image_url,
+        type: editingItem.type,
+        is_active: editingItem.is_active,
+        config: typeof editingItem.config === 'string' ? editingItem.config : JSON.stringify(editingItem.config || {})
+      }).eq('id', editingItem.id);
+      
+      if (error) showStatus('خطأ في التحديث', true);
+      else { showStatus('تم التحديث بنجاح'); setEditingItem(null); fetchData(); }
+    } else {
+      const insertData: any = {
+        name: editingItem.name,
+        description: editingItem.description || '',
+        price: editingItem.price,
+        image_url: editingItem.image_url,
+        type: editingItem.type,
+        is_active: editingItem.is_active !== undefined ? editingItem.is_active : true,
+        config: typeof editingItem.config === 'string' ? editingItem.config : JSON.stringify(editingItem.config || {})
+      };
+      
+      const { error } = await supabase.from('store_items').insert([insertData]);
+      
+      if (error) {
+        console.error('Insert error:', JSON.stringify(error));
+        showStatus(`خطأ في الإضافة: ${error.message || error.details || 'unknown'}`, true);
+      } else { 
+        showStatus('تمت الإضافة بنجاح'); setEditingItem(null); fetchData(); 
+      }
+    }
+    setIsLoading(false);
+  };
+
+  const handleSaveMahmahCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMahmahCategory.name || !newMahmahCategory.image_url) return showStatus('يرجى إدخال اسم الفئة وصورتها', true);
+    setIsLoading(true);
+    const { error } = await supabase.from('mahmah_categories').insert([{ name: newMahmahCategory.name, image_url: newMahmahCategory.image_url }]);
+    if (error) showStatus('خطأ في الإضافة: ' + error.message, true);
+    else { showStatus('تمت الإضافة بنجاح'); setIsAddingMahmahCategory(false); setNewMahmahCategory({ name: '', image_url: '' }); fetchData(); }
+    setIsLoading(false);
+  };
+
+  const handleSaveMahmahQuestion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedMahmahCategory || !newMahmahQuestion.text || !newMahmahQuestion.answer) return showStatus('يرجى ملء جميع الحقول', true);
+    setIsLoading(true);
+    const { error } = await supabase.from('mahmah_questions').insert([{ category_id: selectedMahmahCategory.id, points: newMahmahQuestion.points, text: newMahmahQuestion.text, answer: newMahmahQuestion.answer }]);
+    if (error) showStatus('خطأ في الإضافة: ' + error.message, true);
+    else { showStatus('تمت الإضافة بنجاح'); setIsAddingMahmahQuestion(false); setNewMahmahQuestion({ points: 100, text: '', answer: '' }); fetchData(); }
+    setIsLoading(false);
+  };
+
+  const handleDeleteMahmahCategory = async (id: string) => {
+    if (!confirm('هل أنت متأكد من حذف الفئة؟ (سيتم حذف جميع أسئلتها أيضاً)')) return;
+    setIsLoading(true);
+    const { error } = await supabase.from('mahmah_categories').delete().eq('id', id);
+    if (error) showStatus('خطأ في الحذف: ' + error.message, true);
+    else { showStatus('تم الحذف بنجاح'); if(selectedMahmahCategory?.id === id) setSelectedMahmahCategory(null); fetchData(); }
+    setIsLoading(false);
+  };
+
+  const handleDeleteMahmahQuestion = async (id: string) => {
+    if (!confirm('هل أنت متأكد من حذف السؤال؟')) return;
+    setIsLoading(true);
+    const { error } = await supabase.from('mahmah_questions').delete().eq('id', id);
+    if (error) showStatus('خطأ في الحذف: ' + error.message, true);
+    else { showStatus('تم الحذف بنجاح'); fetchData(); }
+    setIsLoading(false);
+  };
+
+  const handleDeleteStoreItem = async (id: string) => {
+    if (!confirm('هل أنت متأكد من الحذف؟')) return;
+    setIsLoading(true);
+    const { error } = await supabase.from('store_items').delete().eq('id', id);
+    if (error) showStatus('حدث خطأ أثناء الحذف', true);
+    else { fetchData(); showStatus('تم حذف العنصر بنجاح'); }
+    setIsLoading(false);
   };
 
   const filteredProfiles = profiles.filter(p => p.username.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -187,6 +302,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'bans', label: 'المحظورين', icon: Gavel, color: 'text-red-500' },
     { id: 'announcements', label: 'البث', icon: Radio, color: 'text-orange-500' },
     { id: 'promo', label: 'الأكواد', icon: Ticket, color: 'text-yellow-500' },
+    { id: 'store', label: 'المتجر', icon: ShoppingBag, color: 'text-emerald-500' },
+    { id: 'mahmah', label: 'إدارة محمح', icon: Brain, color: 'text-indigo-500' },
     { id: 'arena', label: 'الساحة', icon: Palette, color: 'text-purple-500' },
     { id: 'logs', label: 'السجل', icon: Terminal, color: 'text-zinc-400' },
     { id: 'system', label: 'الصيانة', icon: Settings, color: 'text-red-600' },
@@ -196,70 +313,72 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     <div className="w-full h-full bg-[#030303] text-white flex animate-in fade-in duration-700 font-sans overflow-hidden">
 
       {/* SIDEBAR */}
-      <div className="w-[280px] shrink-0 bg-gradient-to-b from-black via-zinc-900/80 to-black border-l border-white/5 flex flex-col p-6 relative">
-        <div className="absolute top-0 right-0 w-px h-full bg-gradient-to-b from-red-600 via-red-500/30 to-transparent opacity-30"></div>
+      <div className="w-[240px] shrink-0 bg-gradient-to-b from-[#0a0a0a] via-zinc-950 to-[#0a0a0a] border-l border-white/5 flex flex-col p-4 relative z-50 shadow-2xl">
+        <div className="absolute top-0 right-0 w-[1px] h-full bg-gradient-to-b from-red-600 via-red-900/20 to-transparent opacity-20"></div>
 
-        <div className="flex items-center gap-4 mb-10 px-1">
+        <div className="flex items-center gap-3 mb-8 px-2 mt-2">
           <div className="relative">
-            <div className="absolute inset-0 bg-red-600 blur-xl opacity-50 animate-pulse"></div>
-            <div className="relative z-10 w-12 h-12 bg-gradient-to-br from-red-600 to-red-900 rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(255,0,0,0.3)] border border-red-500/30">
-              <Shield size={24} className="text-white" />
+            <div className="absolute inset-0 bg-red-600 blur-lg opacity-40 animate-pulse"></div>
+            <div className="relative z-10 w-10 h-10 bg-gradient-to-br from-red-600 to-red-900 rounded-xl flex items-center justify-center shadow-lg border border-red-500/20">
+              <Shield size={20} className="text-white" />
             </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-black italic tracking-tighter text-white">iABS <span className="text-red-500">ADM</span></h1>
-            <p className="text-xs text-zinc-600 font-bold tracking-[0.3em] uppercase">Control Suite</p>
+          <div className="flex flex-col">
+            <h1 className="text-xl font-black italic tracking-tighter text-white leading-none">iABS <span className="text-red-500">ADM</span></h1>
+            <p className="text-[9px] text-zinc-500 font-bold tracking-[0.2em] uppercase mt-0.5">Control Suite</p>
           </div>
         </div>
 
-        <div className="space-y-1.5 flex-1 overflow-y-auto no-scrollbar">
+        <div className="space-y-1 flex-1 overflow-y-auto no-scrollbar">
           {TABS.map(tab => {
             const isAct = activeTab === tab.id;
             return (
               <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
-                className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 relative group text-right ${isAct ? 'bg-gradient-to-r from-red-600/20 to-red-600/5 text-white shadow-[0_0_30px_rgba(255,0,0,0.1)] border border-red-500/20' : 'text-zinc-500 hover:text-white hover:bg-white/[0.03] border border-transparent'}`}>
-                {isAct && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-red-500 rounded-r-full shadow-[0_0_10px_rgba(255,0,0,0.5)]"></div>}
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${isAct ? 'bg-red-600 text-white shadow-lg' : 'bg-white/5 text-zinc-500 group-hover:bg-white/10'}`}>
-                  <tab.icon size={20} />
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 relative group text-right overflow-hidden ${isAct ? 'bg-white/[0.04] text-white border border-red-500/10 shadow-sm' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02] border border-transparent'}`}>
+                
+                {isAct && <div className="absolute right-0 top-0 w-1 h-full bg-gradient-to-b from-red-500 to-red-700 shadow-[0_0_10px_rgba(255,0,0,0.5)]"></div>}
+                
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 relative z-10 ${isAct ? 'bg-gradient-to-br from-red-600 to-red-700 text-white shadow-md' : 'bg-transparent text-zinc-500 group-hover:text-zinc-400'}`}>
+                  <tab.icon size={16} />
                 </div>
-                <div className="flex flex-col">
-                  <span className="font-black text-base italic leading-tight">{tab.label}</span>
-                  {isAct && <span className="text-[9px] text-red-400/60 uppercase tracking-[0.2em] font-bold mt-0.5">Active</span>}
+                
+                <div className="flex flex-col items-start relative z-10">
+                  <span className={`font-black italic text-sm transition-colors ${isAct ? 'text-white' : ''}`}>{tab.label}</span>
                 </div>
               </button>
             );
           })}
         </div>
 
-        <button onClick={onLogout} className="mt-6 py-4 px-5 border border-white/10 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-red-600/10 hover:text-red-500 hover:border-red-500/30 transition-all active:scale-95 italic bg-white/[0.02] flex items-center justify-center gap-3">
-          <Shield size={16} /> Logout
+        <button onClick={onLogout} className="mt-4 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest text-zinc-500 hover:bg-red-950/30 hover:text-red-500 border border-transparent hover:border-red-900/30 transition-all active:scale-95 flex items-center justify-center gap-2 group">
+          <LogOut size={14} className="group-hover:-translate-x-1 transition-transform" /> Logout
         </button>
       </div>
 
       {/* MAIN */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
         {/* HEADER */}
-        <div className="h-24 shrink-0 border-b border-white/5 flex items-center justify-between px-10 bg-gradient-to-r from-black via-zinc-900/50 to-black relative z-40">
-          <div className="flex items-center gap-8">
+        <div className="h-20 shrink-0 border-b border-white/5 flex items-center justify-between px-8 bg-gradient-to-r from-black via-zinc-900/50 to-black relative z-40">
+          <div className="flex items-center gap-6">
             <div className="flex flex-col">
-              <span className="text-xs text-zinc-600 font-black uppercase tracking-wider">Global Operations</span>
-              <span className="text-2xl font-black italic uppercase tracking-tight text-white">{activeTab.replace('_', ' ')}</span>
+              <span className="text-[10px] text-zinc-600 font-black uppercase tracking-wider">Global Operations</span>
+              <span className="text-xl font-black italic uppercase tracking-tight text-white">{activeTab.replace('_', ' ')}</span>
             </div>
-            <div className="h-10 w-px bg-white/10"></div>
-            <div className="flex items-center gap-3 bg-green-500/5 px-4 py-2 rounded-2xl border border-green-500/10">
-              <div className="relative w-3 h-3">
+            <div className="h-8 w-px bg-white/10"></div>
+            <div className="flex items-center gap-2.5 bg-green-500/5 px-3 py-1.5 rounded-xl border border-green-500/10">
+              <div className="relative w-2.5 h-2.5">
                 <div className="absolute inset-0 bg-green-500 rounded-full animate-ping opacity-75"></div>
                 <div className="absolute inset-0 bg-green-500 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
               </div>
-              <span className="text-sm font-black text-green-400 italic tracking-wider">SYSTEM LIVE</span>
+              <span className="text-xs font-black text-green-400 italic tracking-wider">SYSTEM LIVE</span>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <button onClick={fetchData} className="p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-all border border-white/5 hover:border-white/20">
-              <RotateCw size={24} className={isLoading ? 'animate-spin text-red-500' : 'text-zinc-400'} />
+          <div className="flex items-center gap-3">
+            <button onClick={fetchData} className="p-2.5 bg-white/5 rounded-lg hover:bg-white/10 transition-all border border-white/5 hover:border-white/20">
+              <RotateCw size={18} className={isLoading ? 'animate-spin text-red-500' : 'text-zinc-400'} />
             </button>
-            <div className="bg-white/[0.03] px-6 py-3 rounded-2xl border border-white/5">
-              <span className="text-sm font-mono font-black text-zinc-500">SESSION: iABS-{Math.floor(Math.random() * 99999)}</span>
+            <div className="bg-white/[0.03] px-4 py-2.5 rounded-xl border border-white/5">
+              <span className="text-xs font-mono font-black text-zinc-500">SESSION: iABS-{Math.floor(Math.random() * 99999)}</span>
             </div>
           </div>
         </div>
@@ -275,47 +394,47 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
           {/* OVERVIEW TAB */}
           {activeTab === 'overview' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-10 duration-500">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {[
                   { label: 'إجمالي المسجلين', value: profiles.length, icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
                   { label: 'المحظورين حالياً', value: profiles.filter(p => p.is_banned).length, icon: Ban, color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/20' },
                   { label: 'الأرصدة المتداولة', value: profiles.reduce((acc, p) => acc + (p.credits || 0), 0), icon: Zap, color: 'text-yellow-500', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
                   { label: 'نقاط المتصدرين', value: profiles.reduce((acc, p) => acc + (p.score || 0), 0), icon: Trophy, color: 'text-green-500', bg: 'bg-green-500/10', border: 'border-green-500/20' },
-                ].map(stat => (
-                  <div className={`relative overflow-hidden rounded-[2.5rem] border ${stat.border} ${stat.bg} p-7 transition-all duration-500 hover:scale-[1.02] group bg-gradient-to-br from-black/80 to-black/40`}>
-                    <div className="flex items-center gap-5">
-                      <div className={`w-16 h-16 rounded-2xl ${stat.bg} flex items-center justify-center ${stat.color} group-hover:scale-110 transition-transform duration-500 shadow-lg`}>
-                        <stat.icon size={30} />
+                ].map((stat, i) => (
+                  <div key={i} className={`relative overflow-hidden rounded-2xl border ${stat.border} ${stat.bg} p-5 transition-all duration-500 hover:scale-[1.02] group bg-gradient-to-br from-black/80 to-black/40`}>
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-xl ${stat.bg} flex items-center justify-center ${stat.color} group-hover:scale-110 transition-transform duration-500 shadow-lg shrink-0`}>
+                        <stat.icon size={24} />
                       </div>
                       <div>
-                        <p className="text-sm font-black text-zinc-500 uppercase tracking-wider mb-1">{stat.label}</p>
-                        <p className="text-4xl font-black italic text-white">{stat.value.toLocaleString()}</p>
+                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-wider mb-0.5">{stat.label}</p>
+                        <p className="text-2xl font-black italic text-white leading-none">{stat.value.toLocaleString()}</p>
                       </div>
                     </div>
-                    <div className="absolute -bottom-4 -right-4 w-24 h-24 rounded-full bg-white/[0.02] blur-2xl"></div>
+                    <div className="absolute -bottom-4 -right-4 w-20 h-20 rounded-full bg-white/[0.02] blur-xl"></div>
                   </div>
                 ))}
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="rounded-[2.5rem] border border-white/5 bg-gradient-to-br from-white/[0.02] to-transparent p-8">
-                  <h3 className="text-2xl font-black italic mb-6 flex items-center gap-3 text-white">آخر النشاطات <Activity size={24} className="text-blue-500" /></h3>
-                  <div className="space-y-3">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-white/[0.02] to-transparent p-6">
+                  <h3 className="text-xl font-black italic mb-4 flex items-center gap-2 text-white">آخر النشاطات <Activity size={20} className="text-blue-500" /></h3>
+                  <div className="space-y-2">
                     {profiles.slice(0, 5).map(p => (
-                      <div key={p.id} className="bg-black/60 p-5 rounded-2xl flex items-center justify-between border border-white/[0.03] hover:border-white/10 transition-all">
-                        <div className="flex items-center gap-4">
-                          <ProAvatar url={p.avatar_url} username={p.username} size="w-12 h-12" className="overflow-visible" />
-                          <span className="font-black italic text-lg text-white">{p.username}</span>
+                      <div key={p.id} className="bg-black/60 p-3 rounded-xl flex items-center justify-between border border-white/[0.03] hover:border-white/10 transition-all">
+                        <div className="flex items-center gap-3">
+                          <ProAvatar url={p.avatar_url} username={p.username} size="w-10 h-10" className="overflow-visible" />
+                          <span className="font-black italic text-sm text-white">{p.username}</span>
                         </div>
-                        <span className="text-sm font-mono text-zinc-600">{new Date(p.created_at).toLocaleDateString('ar-EG')}</span>
+                        <span className="text-xs font-mono text-zinc-600">{new Date(p.created_at).toLocaleDateString('ar-EG')}</span>
                       </div>
                     ))}
                   </div>
                 </div>
-                <div className="rounded-[2.5rem] border border-white/5 bg-gradient-to-br from-white/[0.02] to-transparent p-10 flex flex-col justify-center items-center text-center">
-                  <Terminal size={120} className="text-zinc-800 mb-6" />
-                  <h4 className="text-3xl font-black italic mb-3 text-white">النظام قيد التشغيل الكامل</h4>
-                  <p className="text-zinc-500 font-bold text-lg max-w-md">جميع الوحدات البرمجية تعمل بكفاءة عالية. السيرفر متصل بقاعدة بيانات SQL السحابية.</p>
+                <div className="rounded-2xl border border-white/5 bg-gradient-to-br from-white/[0.02] to-transparent p-8 flex flex-col justify-center items-center text-center">
+                  <Terminal size={60} className="text-zinc-800 mb-4" />
+                  <h4 className="text-2xl font-black italic mb-2 text-white">النظام قيد التشغيل الكامل</h4>
+                  <p className="text-zinc-500 font-bold text-sm max-w-sm leading-relaxed">جميع الوحدات البرمجية تعمل بكفاءة عالية. السيرفر متصل بقاعدة بيانات SQL السحابية.</p>
                 </div>
               </div>
             </div>
@@ -323,65 +442,60 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
           {/* USERS TAB */}
           {activeTab === 'users' && (
-            <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="space-y-4 animate-in fade-in duration-500">
               <div className="flex flex-col md:flex-row gap-4 items-end justify-between">
                 <div className="flex-1 w-full max-w-lg">
-                  <label className="text-sm font-black text-zinc-600 uppercase tracking-wider mb-1 block italic">Search</label>
+                  <label className="text-[10px] font-black text-zinc-600 uppercase tracking-wider mb-1 block italic">Search</label>
                   <div className="relative">
-                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600" size={20} />
-                    <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="ابحث بالاسم..." className="w-full bg-black/60 border border-white/10 rounded-2xl p-5 pr-14 text-lg text-white font-black focus:border-blue-600 outline-none transition-all shadow-lg" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
+                    <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="ابحث بالاسم..." className="w-full bg-black/60 border border-white/10 rounded-xl p-3 pr-10 text-sm text-white font-black focus:border-blue-600 outline-none transition-all shadow-lg" />
                   </div>
                 </div>
-                <div className="bg-zinc-900/80 px-8 py-5 rounded-2xl border border-white/10 text-center">
-                  <span className="text-sm font-black text-zinc-500 uppercase tracking-wider block mb-1">Total</span>
-                  <span className="text-3xl font-black italic text-white">{filteredProfiles.length}</span>
+                <div className="bg-zinc-900/80 px-6 py-3 rounded-xl border border-white/10 text-center">
+                  <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider block mb-0.5">Total</span>
+                  <span className="text-xl font-black italic text-white">{filteredProfiles.length}</span>
                 </div>
               </div>
 
-              <div className="rounded-[2.5rem] border border-white/5 overflow-hidden shadow-xl bg-black/40">
+              <div className="rounded-2xl border border-white/5 overflow-hidden shadow-xl bg-black/40">
                 <div className="overflow-x-auto">
                   <table className="w-full text-right">
                     <thead>
-                      <tr className="bg-white/[0.03] text-sm font-black uppercase text-zinc-500 tracking-[0.1em] border-b border-white/5">
-                        <th className="p-6">اللاعب</th>
-                        <th className="p-6">فوز</th>
-                        <th className="p-6">نقاط</th>
-                        <th className="p-6">رصيد</th>
-                        <th className="p-6">الحالة</th>
-                        <th className="p-6 text-center">تحكم</th>
+                      <tr className="bg-white/[0.03] text-[10px] font-black uppercase text-zinc-500 tracking-[0.1em] border-b border-white/5">
+                        <th className="p-4">اللاعب</th>
+                        <th className="p-4">فوز</th>
+                        <th className="p-4">نقاط</th>
+                        <th className="p-4">الحالة</th>
+                        <th className="p-4 text-center">تحكم</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/[0.02]">
                       {filteredProfiles.map(p => (
                         <tr key={p.id} className="hover:bg-white/[0.02] transition-all group">
-                          <td className="p-5">
-                            <div className="flex items-center gap-4">
-                              <ProAvatar url={p.avatar_url} username={p.username} size="w-14 h-14" className="overflow-visible" />
+                          <td className="p-3">
+                            <div className="flex items-center gap-3">
+                              <ProAvatar url={p.avatar_url} username={p.username} size="w-10 h-10" className="overflow-visible" />
                               <div>
-                                <div className={`text-xl font-black italic ${p.is_banned ? 'text-zinc-700 line-through' : 'text-white'}`}>{p.username}</div>
-                                <div className="text-sm font-mono text-zinc-600">{p.id?.slice(0, 8).toUpperCase()}</div>
+                                <div className={`text-base font-black italic leading-tight ${p.is_banned ? 'text-zinc-700 line-through' : 'text-white'}`}>{p.username}</div>
+                                <div className="text-[10px] font-mono text-zinc-600">{p.id?.slice(0, 8).toUpperCase()}</div>
                               </div>
                             </div>
                           </td>
-                          <td className="p-5"><div className="font-black text-2xl text-blue-500 italic">{p.wins || 0}</div></td>
-                          <td className="p-5 text-2xl font-black italic text-white/80">{p.score || 0}</td>
-                          <td className="p-5 text-2xl font-black text-green-500 italic">
-                            § {p.credits || 0}
-                            <div className="text-xs font-mono text-zinc-500 mt-1">{(logs || []).find(l => (l.details?.username === p.username) && (l.action === 'PROMO_REDEEM' || l.action === 'CREDITS_ADJUST')) ? 'معدّل' : ' '}</div>
-                          </td>
-                          <td className="p-5">
+                          <td className="p-3"><div className="font-black text-lg text-blue-500 italic">{p.wins || 0}</div></td>
+                          <td className="p-3 text-lg font-black italic text-white/80">{p.score || 0}</td>
+                          <td className="p-3">
                             {p.is_banned
-                              ? <span className="inline-flex items-center gap-2 bg-red-600/10 text-red-500 border border-red-500/20 px-5 py-2 rounded-full text-sm font-black tracking-wider uppercase">Restricted</span>
-                              : <span className="inline-flex items-center gap-2 bg-green-600/10 text-green-500 border border-green-500/20 px-5 py-2 rounded-full text-sm font-black tracking-wider uppercase">Authorized</span>
+                              ? <span className="inline-flex items-center gap-1.5 bg-red-600/10 text-red-500 border border-red-500/20 px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase">Restricted</span>
+                              : <span className="inline-flex items-center gap-1.5 bg-green-600/10 text-green-500 border border-green-500/20 px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase">Authorized</span>
                             }
                           </td>
-                          <td className="p-5">
-                            <div className="flex items-center gap-2 justify-center">
-                              <button onClick={() => { setTargetUser(p.username); setStatType('points'); showStatus(`تم تحديد ${p.username}`); }} className="p-3 bg-blue-600/10 text-blue-500 rounded-xl hover:bg-blue-600 hover:text-white transition-all border border-blue-500/10 hover:border-blue-500/30" title="نقاط"><Trophy size={18} /></button>
-                              <button onClick={() => { setTargetUser(p.username); setStatType('wins'); showStatus(`تم تحديد ${p.username}`); }} className="p-3 bg-yellow-600/10 text-yellow-500 rounded-xl hover:bg-yellow-600 hover:text-white transition-all border border-yellow-500/10 hover:border-yellow-500/30" title="فوز"><Star size={18} /></button>
-                              <button onClick={() => { setTargetUser(p.username); setStatType('credits'); showStatus(`تم تحديد ${p.username}`); }} className="p-3 bg-green-600/10 text-green-500 rounded-xl hover:bg-green-600 hover:text-black transition-all border border-green-500/10 hover:border-green-500/30" title="رصيد"><Zap size={18} /></button>
-                              <button onClick={() => handleToggleBan(p.username, p.is_banned)} className={`p-3 rounded-xl border transition-all ${p.is_banned ? 'bg-green-600 text-black border-green-500/30' : 'bg-red-600/10 text-red-500 border-red-500/10 hover:bg-red-600 hover:text-white hover:border-red-500/30'}`}>{p.is_banned ? <Unlock size={18} /> : <Ban size={18} />}</button>
-                              <button onClick={() => handleResetUser(p.username)} className="p-3 bg-white/5 text-white/40 rounded-xl border border-white/5 hover:bg-white/10 hover:text-white transition-all"><RotateCw size={18} /></button>
+                          <td className="p-3">
+                            <div className="flex items-center gap-1.5 justify-center">
+                              <button onClick={() => { setTargetUser(p.username); setStatType('points'); showStatus(`تم تحديد ${p.username}`); }} className="p-2 bg-blue-600/10 text-blue-500 rounded-lg hover:bg-blue-600 hover:text-white transition-all border border-blue-500/10 hover:border-blue-500/30" title="نقاط"><Trophy size={14} /></button>
+                              <button onClick={() => { setTargetUser(p.username); setStatType('wins'); showStatus(`تم تحديد ${p.username}`); }} className="p-2 bg-yellow-600/10 text-yellow-500 rounded-lg hover:bg-yellow-600 hover:text-white transition-all border border-yellow-500/10 hover:border-yellow-500/30" title="فوز"><Star size={14} /></button>
+                              <button onClick={() => { setTargetUser(p.username); setStatType('credits'); showStatus(`تم تحديد ${p.username}`); }} className="p-2 bg-green-600/10 text-green-500 rounded-lg hover:bg-green-600 hover:text-black transition-all border border-green-500/10 hover:border-green-500/30" title="رصيد"><Zap size={14} /></button>
+                              <button onClick={() => handleToggleBan(p.username, p.is_banned)} className={`p-2 rounded-lg border transition-all ${p.is_banned ? 'bg-green-600 text-black border-green-500/30' : 'bg-red-600/10 text-red-500 border-red-500/10 hover:bg-red-600 hover:text-white hover:border-red-500/30'}`}>{p.is_banned ? <Unlock size={14} /> : <Ban size={14} />}</button>
+                              <button onClick={() => handleResetUser(p.username)} className="p-2 bg-white/5 text-white/40 rounded-lg border border-white/5 hover:bg-white/10 hover:text-white transition-all"><RotateCw size={14} /></button>
                             </div>
                           </td>
                         </tr>
@@ -392,65 +506,65 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
               </div>
 
               {targetUser && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
-                  <div className="absolute inset-0 bg-black/70 backdrop-blur-2xl" onClick={() => setTargetUser('')}></div>
-                  <div className="relative w-full max-w-2xl bg-gradient-to-b from-[#0a0a0a] to-black rounded-[3rem] border border-white/10 shadow-[0_50px_150px_rgba(0,0,0,1)] overflow-hidden animate-in zoom-in-95 duration-500">
-                    <div className={`h-2 w-full transition-all duration-500 ${statType === 'points' ? 'bg-blue-600' : statType === 'wins' ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
-                    <div className="p-8 md:p-10 space-y-8">
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 animate-in fade-in duration-300">
+                  <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={() => setTargetUser('')}></div>
+                  <div className="relative w-full max-w-xl bg-gradient-to-b from-[#0a0a0a] to-black rounded-3xl border border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                    <div className={`h-1.5 w-full transition-all duration-500 ${statType === 'points' ? 'bg-blue-600' : statType === 'wins' ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
+                    <div className="p-6 space-y-6">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-6">
-                          <ProAvatar url={profiles.find(p => p.username === targetUser)?.avatar_url} username={targetUser} size="w-16 h-16" className="border-2 border-white/10 overflow-visible" />
+                        <div className="flex items-center gap-4">
+                          <ProAvatar url={profiles.find(p => p.username === targetUser)?.avatar_url} username={targetUser} size="w-12 h-12" className="border-2 border-white/10 overflow-visible" />
                           <div>
-                            <h2 className="text-3xl font-black italic text-white tracking-tighter">{targetUser}</h2>
-                            <p className="text-sm font-black text-zinc-500 uppercase tracking-[0.3em]">Admin Control</p>
+                            <h2 className="text-xl font-black italic text-white tracking-tighter leading-none">{targetUser}</h2>
+                            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mt-1">Admin Control</p>
                           </div>
                         </div>
-                        <button onClick={() => setTargetUser('')} className="w-12 h-12 bg-white/5 hover:bg-red-600 hover:text-white rounded-2xl flex items-center justify-center transition-all border border-white/10"><X size={24} /></button>
+                        <button onClick={() => setTargetUser('')} className="w-8 h-8 bg-white/5 hover:bg-red-600 hover:text-white rounded-lg flex items-center justify-center transition-all border border-white/10"><X size={16} /></button>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-3 p-2 bg-white/[0.02] border border-white/5 rounded-2xl">
+                      <div className="grid grid-cols-3 gap-2 p-1.5 bg-white/[0.02] border border-white/5 rounded-xl">
                         {[{ id: 'points', label: 'النقاط', icon: Trophy, activeColor: 'bg-blue-600' }, { id: 'wins', label: 'الفوز', icon: Star, activeColor: 'bg-yellow-500' }, { id: 'credits', label: 'الرصيد', icon: Zap, activeColor: 'bg-green-500' }].map(tab => (
                           <button key={tab.id} onClick={() => setStatType(tab.id as any)}
-                            className={`flex flex-col items-center gap-3 py-6 rounded-2xl transition-all duration-300 ${statType === tab.id ? `${tab.activeColor} text-white shadow-xl scale-105 border border-white/20` : 'text-zinc-500 hover:text-white hover:bg-white/5 border border-transparent'}`}>
-                            <tab.icon size={28} />
-                            <span className="text-sm font-black uppercase tracking-wider">{tab.label}</span>
+                            className={`flex flex-col items-center gap-2 py-3 rounded-lg transition-all duration-300 ${statType === tab.id ? `${tab.activeColor} text-white shadow-md scale-[1.02] border border-white/20` : 'text-zinc-500 hover:text-white hover:bg-white/5 border border-transparent'}`}>
+                            <tab.icon size={20} />
+                            <span className="text-[10px] font-black uppercase tracking-wider">{tab.label}</span>
                           </button>
                         ))}
                       </div>
 
-                      <div className="space-y-6">
-                        <div className="flex items-center gap-4">
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
                           {[{ label: 'الرصيد', value: profiles.find(p => p.username === targetUser)?.credits || 0, color: 'text-green-500' }, { label: 'النقاط', value: profiles.find(p => p.username === targetUser)?.score || 0, color: 'text-blue-500' }, { label: 'الفوز', value: profiles.find(p => p.username === targetUser)?.wins || 0, color: 'text-yellow-500' }].map((stat, i) => (
-                            <div key={i} className="flex-1 bg-white/[0.02] border border-white/10 rounded-2xl p-5 text-center">
-                              <p className="text-sm font-black text-zinc-600 uppercase mb-1 tracking-wider">{stat.label}</p>
-                              <p className={`text-2xl font-black italic ${stat.color}`}>{stat.value.toLocaleString()}</p>
+                            <div key={i} className="flex-1 bg-white/[0.02] border border-white/10 rounded-xl p-3 text-center">
+                              <p className="text-[10px] font-black text-zinc-600 uppercase mb-0.5 tracking-wider">{stat.label}</p>
+                              <p className={`text-lg font-black italic ${stat.color}`}>{stat.value.toLocaleString()}</p>
                             </div>
                           ))}
                         </div>
 
-                        <div className="bg-black/80 border border-white/5 rounded-[2.5rem] p-10 flex flex-col items-center gap-6">
-                          <span className="text-sm font-black text-zinc-600 uppercase tracking-[0.4em]">Adjusting Value</span>
-                          <div className="flex items-center gap-8">
-                            <button onClick={() => setPointDelta(Math.max(1, (Number(pointDelta) || 0) - 10))} className="w-16 h-16 flex items-center justify-center bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all text-3xl font-black text-white">-</button>
+                        <div className="bg-black/80 border border-white/5 rounded-2xl p-6 flex flex-col items-center gap-4">
+                          <span className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em]">Adjusting Value</span>
+                          <div className="flex items-center gap-4">
+                            <button onClick={() => setPointDelta(Math.max(1, (Number(pointDelta) || 0) - 10))} className="w-10 h-10 flex items-center justify-center bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-all text-xl font-black text-white">-</button>
                             <input type="number" value={pointDelta} onChange={(e) => setPointDelta(Number(e.target.value))}
-                              className={`w-40 bg-transparent text-center text-5xl font-black outline-none tracking-tighter [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors duration-500 ${statType === 'points' ? 'text-blue-500' : statType === 'wins' ? 'text-yellow-500' : 'text-green-500'}`} />
-                            <button onClick={() => setPointDelta((Number(pointDelta) || 0) + 10)} className="w-16 h-16 flex items-center justify-center bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all text-3xl font-black text-white">+</button>
+                              className={`w-24 bg-transparent text-center text-3xl font-black outline-none tracking-tighter [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors duration-500 ${statType === 'points' ? 'text-blue-500' : statType === 'wins' ? 'text-yellow-500' : 'text-green-500'}`} />
+                            <button onClick={() => setPointDelta((Number(pointDelta) || 0) + 10)} className="w-10 h-10 flex items-center justify-center bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-all text-xl font-black text-white">+</button>
                           </div>
-                          <div className="flex flex-wrap justify-center gap-3">
+                          <div className="flex flex-wrap justify-center gap-2">
                             {[1, 5, 20, 50, 100, 500, 1000].map(val => (
-                              <button key={val} onClick={() => handleAdjustStats(true, val)} className="px-6 py-3 bg-white/[0.03] border border-white/10 rounded-2xl text-base font-black hover:bg-white/10 transition-all text-zinc-400 hover:text-white">+{val}</button>
+                              <button key={val} onClick={() => handleAdjustStats(true, val)} className="px-3 py-1.5 bg-white/[0.03] border border-white/10 rounded-lg text-xs font-black hover:bg-white/10 transition-all text-zinc-400 hover:text-white">+{val}</button>
                             ))}
                           </div>
                         </div>
 
-                        <div className="flex gap-4">
+                        <div className="flex gap-3">
                           <button onClick={() => handleAdjustStats(true)}
-                            className={`flex-[3] py-6 rounded-2xl font-black text-xl italic uppercase tracking-wider transition-all active:scale-95 border border-white/10 ${statType === 'points' ? 'bg-blue-600 text-white shadow-[0_0_40px_rgba(59,130,246,0.3)]' : statType === 'wins' ? 'bg-yellow-500 text-black shadow-[0_0_40px_rgba(234,179,8,0.3)]' : 'bg-green-500 text-black shadow-[0_0_40px_rgba(34,197,94,0.3)]'}`}>
+                            className={`flex-[3] py-3 rounded-xl font-black text-sm italic uppercase tracking-wider transition-all active:scale-95 border border-white/10 ${statType === 'points' ? 'bg-blue-600 text-white shadow-lg' : statType === 'wins' ? 'bg-yellow-500 text-black shadow-lg' : 'bg-green-500 text-black shadow-lg'}`}>
                             تأكيد الإضافة
                           </button>
                           <button onClick={() => handleAdjustStats(false)}
-                            className="flex-1 py-6 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/20 rounded-2xl font-black flex items-center justify-center gap-3 transition-all active:scale-95 text-lg">
-                            <UserMinus size={24} />
+                            className="flex-1 py-3 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/20 rounded-xl font-black flex items-center justify-center gap-2 transition-all active:scale-95 text-sm">
+                            <UserMinus size={16} />
                             <span className="italic font-black">خصم</span>
                           </button>
                         </div>
@@ -464,29 +578,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
           {/* BANS TAB */}
           {activeTab === 'bans' && (
-            <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-12 duration-700">
+            <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-12 duration-700">
               <div>
-                <h2 className="text-6xl font-black text-red-600 italic tracking-tighter drop-shadow-[0_0_30px_rgba(255,0,0,0.3)]">IRON SHIELD</h2>
-                <p className="text-zinc-500 font-bold mt-4 text-xl italic uppercase">Centralized Punishment & Restriction Hub</p>
+                <h2 className="text-4xl font-black text-red-600 italic tracking-tighter drop-shadow-[0_0_20px_rgba(255,0,0,0.3)]">IRON SHIELD</h2>
+                <p className="text-zinc-500 font-bold mt-2 text-sm italic uppercase">Centralized Punishment & Restriction Hub</p>
               </div>
 
-              <div className="rounded-[4rem] border border-red-600/20 bg-red-600/[0.01] p-12 shadow-2xl relative overflow-hidden group">
-                <Gavel size={150} className="absolute right-[-20px] top-[-20px] text-red-600/5 group-hover:rotate-12 transition-transform duration-1000" />
-                <h3 className="text-3xl font-black text-white italic mb-10 flex items-center gap-4 border-b border-white/5 pb-6">
-                  <Ban className="text-red-600" size={32} /> حظر لاعب جديد
+              <div className="rounded-3xl border border-red-600/20 bg-red-600/[0.01] p-8 shadow-2xl relative overflow-hidden group">
+                <Gavel size={80} className="absolute right-[-10px] top-[-10px] text-red-600/5 group-hover:rotate-12 transition-transform duration-1000" />
+                <h3 className="text-2xl font-black text-white italic mb-6 flex items-center gap-3 border-b border-white/5 pb-4">
+                  <Ban className="text-red-600" size={24} /> حظر لاعب جديد
                 </h3>
-                <div className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-3">
-                      <label className="text-xs font-black text-zinc-600 uppercase tracking-wider pl-4">Target Identity</label>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-600 uppercase tracking-wider pl-2">Target Identity</label>
                       <input type="text" value={targetUser} onChange={(e) => setTargetUser(e.target.value)}
                         placeholder="اسم المستخدم..."
-                        className="w-full bg-black border border-white/10 rounded-[2.5rem] p-6 text-2xl text-white font-black focus:border-red-600 outline-none transition-all shadow-inner" />
+                        className="w-full bg-black border border-white/10 rounded-2xl p-4 text-base text-white font-black focus:border-red-600 outline-none transition-all shadow-inner" />
                     </div>
-                    <div className="space-y-3">
-                      <label className="text-xs font-black text-zinc-600 uppercase tracking-wider pl-4">Violation Type</label>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-600 uppercase tracking-wider pl-2">Violation Type</label>
                       <select value={banReason} onChange={(e) => setBanReason(e.target.value)}
-                        className="w-full bg-black border border-white/10 rounded-[2.5rem] p-6 text-xl text-white font-black focus:border-red-600 outline-none appearance-none">
+                        className="w-full bg-black border border-white/10 rounded-2xl p-4 text-sm text-white font-black focus:border-red-600 outline-none appearance-none">
                         <option>مخالفة قوانين الدردشة</option>
                         <option>استخدام برامج مساعدة (Cheating)</option>
                         <option>إزعاج المتسابقين (Harassment)</option>
@@ -496,27 +610,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                     </div>
                   </div>
                   <button onClick={() => { if (!targetUser) return showStatus('يرجى كتابة اسم اللاعب', true); if (confirm(`تأكيد حظر ${targetUser} نهائياً؟`)) handleToggleBan(targetUser, false); }}
-                    className="w-full py-8 bg-black border-2 border-red-600 text-red-500 font-black text-3xl rounded-[3rem] hover:bg-red-600 hover:text-white transition-all shadow-[0_30px_80px_rgba(220,38,38,0.2)] flex items-center justify-center gap-4 italic uppercase">
-                    <Gavel size={36} /> Execute Judgement
+                    className="w-full py-4 bg-black border border-red-600/50 text-red-500 font-black text-lg rounded-2xl hover:bg-red-600 hover:text-white transition-all shadow-[0_15px_40px_rgba(220,38,38,0.2)] flex items-center justify-center gap-3 italic uppercase">
+                    <Gavel size={20} /> Execute Judgement
                   </button>
                 </div>
               </div>
 
-              <div className="space-y-6">
-                <h4 className="text-sm font-black text-zinc-600 uppercase tracking-[0.3em] pl-4 italic">Banned List Database</h4>
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] pl-2 italic">Banned List Database</h4>
                 {profiles.filter(p => p.is_banned).map(p => (
-                  <div key={p.id} className="rounded-3xl border border-red-900/40 bg-red-950/5 p-8 flex items-center justify-between group hover:border-red-500/40 transition-all">
-                    <div className="flex items-center gap-8">
-                      <div className="relative group-hover:scale-110 transition-transform">
-                        <ProAvatar url={p.avatar_url} username={p.username} size="w-20 h-20" className="opacity-40 grayscale overflow-visible" />
-                        <Ban size={28} className="absolute inset-0 m-auto text-red-600 drop-shadow-xl z-20" />
+                  <div key={p.id} className="rounded-2xl border border-red-900/40 bg-red-950/5 p-4 flex items-center justify-between group hover:border-red-500/40 transition-all">
+                    <div className="flex items-center gap-4">
+                      <div className="relative group-hover:scale-105 transition-transform">
+                        <ProAvatar url={p.avatar_url} username={p.username} size="w-12 h-12" className="opacity-40 grayscale overflow-visible" />
+                        <Ban size={20} className="absolute inset-0 m-auto text-red-600 drop-shadow-md z-20" />
                       </div>
                       <div>
-                        <div className="text-2xl font-black text-white italic">{p.username}</div>
-                        <div className="text-xs font-bold text-red-600/60 uppercase tracking-widest mt-1">Status: Restricted Permanently</div>
+                        <div className="text-lg font-black text-white italic leading-tight">{p.username}</div>
+                        <div className="text-[10px] font-bold text-red-600/60 uppercase tracking-widest mt-0.5">Status: Restricted Permanently</div>
                       </div>
                     </div>
-                    <button onClick={() => handleToggleBan(p.username, true)} className="px-8 py-4 bg-green-600/10 text-green-500 border border-green-500/20 rounded-2xl font-black text-sm hover:bg-green-600 hover:text-black transition-all active:scale-95 italic uppercase tracking-widest">Unban Player</button>
+                    <button onClick={() => handleToggleBan(p.username, true)} className="px-4 py-2 bg-green-600/10 text-green-500 border border-green-500/20 rounded-xl font-black text-[10px] hover:bg-green-600 hover:text-black transition-all active:scale-95 italic uppercase tracking-widest">Unban Player</button>
                   </div>
                 ))}
               </div>
@@ -525,106 +639,96 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
           {/* ANNOUNCEMENTS TAB */}
           {activeTab === 'announcements' && (
-            <div className="max-w-5xl mx-auto space-y-12 animate-in slide-in-from-right-12">
+            <div className="max-w-4xl mx-auto space-y-8 animate-in slide-in-from-right-12">
               <div>
-                <h2 className="text-6xl font-black text-white italic tracking-tighter">BROADCAST CORE</h2>
-                <p className="text-zinc-500 font-bold mt-4 text-xl italic uppercase">Global Frequency Distribution System</p>
+                <h2 className="text-4xl font-black text-white italic tracking-tighter">BROADCAST CORE</h2>
+                <p className="text-zinc-500 font-bold mt-2 text-sm italic uppercase">Global Frequency Distribution System</p>
               </div>
 
-              <div className="rounded-[4rem] border border-orange-500/20 bg-orange-500/[0.01] p-14 shadow-2xl relative">
-                <Radio size={200} className="absolute left-[-50px] top-[-50px] text-orange-600/5" />
-                <div className="flex flex-col gap-10">
+              <div className="rounded-3xl border border-orange-500/20 bg-orange-500/[0.01] p-8 shadow-2xl relative">
+                <Radio size={100} className="absolute left-[-20px] top-[-20px] text-orange-600/5" />
+                <div className="flex flex-col gap-6 relative z-10">
                   <textarea value={newAnnouncement} onChange={(e) => setNewAnnouncement(e.target.value)}
                     placeholder="اكتب رسالة البث العام هنا... ستظهر للجميع فوراً!"
-                    className="w-full bg-black/40 border-4 border-white/[0.03] rounded-[3rem] p-12 text-3xl text-white font-black focus:border-red-600 outline-none transition-all min-h-[300px] shadow-inner text-center leading-relaxed italic placeholder:text-zinc-800" />
+                    className="w-full bg-black/40 border-2 border-white/[0.05] rounded-2xl p-6 text-xl text-white font-black focus:border-red-600 outline-none transition-all min-h-[150px] shadow-inner text-center leading-relaxed italic placeholder:text-zinc-800" />
                   <button onClick={async () => { if (!newAnnouncement) return; setIsLoading(true); const { error } = await adminService.addAnnouncement(newAnnouncement); setIsLoading(false); if (!error) { setNewAnnouncement(''); showStatus('تم إطلاق البث المباشر بنجاح!'); fetchData(); } else { showStatus('فشل إرسال البث', true); } }}
                     disabled={isLoading}
-                    className="w-full py-8 bg-gradient-to-r from-red-600 to-orange-600 text-white font-black text-3xl rounded-[3rem] hover:scale-[1.02] active:scale-95 transition-all shadow-[0_25px_80px_rgba(255,0,0,0.4)] flex items-center justify-center gap-4 italic uppercase disabled:opacity-50">
-                    <Radio size={40} className={isLoading ? 'animate-spin' : 'animate-pulse'} />
+                    className="w-full py-4 bg-gradient-to-r from-red-600 to-orange-600 text-white font-black text-lg rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_15px_40px_rgba(255,0,0,0.3)] flex items-center justify-center gap-3 italic uppercase disabled:opacity-50">
+                    <Radio size={24} className={isLoading ? 'animate-spin' : 'animate-pulse'} />
                     {isLoading ? 'Processing...' : 'TRANSMIT REAL-TIME PULSE'}
                   </button>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {announcements.map(a => (
-                  <div key={a.id} className="bg-white/[0.02] border border-white/5 p-8 rounded-[3rem] flex items-center justify-between group relative overflow-hidden hover:bg-white/[0.04] transition-all">
-                    <div className="absolute top-0 left-0 w-2 h-full bg-orange-600/20 group-hover:bg-orange-600 transition-colors"></div>
-                    <p className="text-xl text-white font-bold flex-1 px-4 italic leading-relaxed">{a.content}</p>
-                    <button onClick={() => adminService.deleteAnnouncement(a.id).then(fetchData)} className="p-4 bg-red-600/10 text-red-500 rounded-2xl hover:bg-red-600 hover:text-white transition-all shrink-0"><Trash2 size={24} /></button>
-                  </div>
-                ))}
               </div>
             </div>
           )}
 
           {/* PROMO TAB */}
           {activeTab === 'promo' && (
-            <div className="max-w-5xl mx-auto space-y-12 animate-in zoom-in-95 duration-700">
+            <div className="max-w-4xl mx-auto space-y-8 animate-in zoom-in-95 duration-700">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-6xl font-black text-yellow-500 italic tracking-tighter">GOLDEN FORGE</h2>
-                  <p className="text-zinc-500 font-bold mt-4 text-xl">صناعة الأكواد والهدايا الترويجية</p>
+                  <h2 className="text-4xl font-black text-yellow-500 italic tracking-tighter">GOLDEN FORGE</h2>
+                  <p className="text-zinc-500 font-bold mt-2 text-sm">صناعة الأكواد والهدايا الترويجية</p>
                 </div>
-                <Ticket size={100} className="text-yellow-600/20" />
+                <Ticket size={60} className="text-yellow-600/20" />
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                <div className="rounded-[4rem] border border-yellow-500/20 bg-yellow-500/[0.01] p-12 shadow-2xl">
-                  <h3 className="text-3xl font-black text-white italic mb-4 flex items-center gap-4"><Sparkles className="text-yellow-500" /> كود ترويجي جديد</h3>
-                  <div className="mb-6 text-sm text-zinc-500 font-bold">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="rounded-3xl border border-yellow-500/20 bg-yellow-500/[0.01] p-8 shadow-2xl">
+                  <h3 className="text-xl font-black text-white italic mb-3 flex items-center gap-3"><Sparkles className="text-yellow-500" size={20} /> كود ترويجي جديد</h3>
+                  <div className="mb-4 text-xs text-zinc-500 font-bold">
                     حالة مراقبة الشات: {chatStatus.connected ? <span className="text-green-500">متصل</span> : <span className="text-red-500">غير متصل</span>}
                     {chatStatus.details ? <span className="mr-2 opacity-60">({chatStatus.details})</span> : null}
                   </div>
-                  <div className="space-y-8">
-                    <div className="space-y-3">
-                      <label className="text-sm font-black text-zinc-600 uppercase tracking-wider pl-4">Secret Sequence</label>
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-600 uppercase tracking-wider pl-2">Secret Sequence</label>
                       <input type="text" value={newPromo.code} onChange={(e) => setNewPromo({ ...newPromo, code: e.target.value.toUpperCase() })}
                         placeholder="مثال: GOLDEN_KICK"
-                        className="w-full bg-black border-2 border-white/10 rounded-[3rem] p-8 text-4xl text-white font-black focus:border-yellow-500 outline-none transition-all shadow-2xl text-center tracking-widest placeholder:text-zinc-800" />
+                        className="w-full bg-black border-2 border-white/10 rounded-2xl p-4 text-2xl text-white font-black focus:border-yellow-500 outline-none transition-all shadow-xl text-center tracking-widest placeholder:text-zinc-800" />
                     </div>
-                    <div className="grid grid-cols-2 gap-8">
-                      <div className="space-y-3">
-                        <label className="text-sm font-black text-zinc-600 uppercase tracking-wider">Amount (§)</label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-zinc-600 uppercase tracking-wider">Amount (§)</label>
                         <input type="number" value={newPromo.amount} onChange={(e) => setNewPromo({ ...newPromo, amount: Number(e.target.value) })}
-                          className="w-full bg-white/5 border border-white/10 rounded-3xl p-6 text-2xl font-black text-yellow-500 text-center" />
+                          className="w-full bg-white/5 border border-white/10 rounded-2xl p-3 text-xl font-black text-yellow-500 text-center" />
                       </div>
-                      <div className="space-y-3">
-                        <label className="text-sm font-black text-zinc-600 uppercase tracking-wider">Global Limit</label>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-zinc-600 uppercase tracking-wider">Global Limit</label>
                         <input type="number" value={newPromo.maxUses} onChange={(e) => setNewPromo({ ...newPromo, maxUses: Number(e.target.value) })}
-                          className="w-full bg-white/5 border border-white/10 rounded-3xl p-6 text-2xl font-black text-white text-center" />
+                          className="w-full bg-white/5 border border-white/10 rounded-2xl p-3 text-xl font-black text-white text-center" />
                       </div>
                     </div>
                     <button onClick={async () => { if (!newPromo.code) return; await adminService.addPromoCode(newPromo.code, newPromo.amount, newPromo.maxUses); showStatus('تم توليد الكود بنجاح'); setNewPromo({ code: '', amount: 1000, maxUses: 10 }); fetchData(); }}
-                      className="w-full py-8 bg-yellow-500 text-black font-black text-3xl rounded-[3rem] hover:scale-[1.03] active:scale-95 transition-all shadow-[0_20px_60px_rgba(234,179,8,0.3)] flex items-center justify-center gap-4 italic uppercase">
-                      <Save size={32} /> Commit Golden Forge
+                      className="w-full py-4 bg-yellow-500 text-black font-black text-lg rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_10px_30px_rgba(234,179,8,0.2)] flex items-center justify-center gap-3 italic uppercase">
+                      <Save size={24} /> Commit Golden Forge
                     </button>
                   </div>
                 </div>
 
-                <div className="space-y-6">
-                  <h3 className="text-sm font-black text-zinc-600 uppercase tracking-[0.3em] pl-4 italic">Active Coupon Clusters</h3>
+                <div className="space-y-4">
+                  <h3 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] pl-2 italic">Active Coupon Clusters</h3>
                   {promoCodes.map(promo => (
-                    <div key={promo.id} className="bg-gradient-to-r from-zinc-900 to-black border border-white/5 p-8 rounded-[2.5rem] flex items-center justify-between group hover:border-yellow-500/30 transition-all shadow-2xl overflow-hidden relative">
-                      <div className="absolute top-0 right-0 w-24 h-full bg-yellow-500/5 skew-x-[-20deg] translate-x-12"></div>
-                      <div className="flex items-center gap-10">
-                        <div className="w-20 h-20 bg-yellow-500 rounded-3xl flex items-center justify-center text-black font-black text-4xl shadow-xl shrink-0 group-hover:rotate-12 transition-transform">
-                          <Ticket size={40} />
+                    <div key={promo.id} className="bg-gradient-to-r from-zinc-900 to-black border border-white/5 p-5 rounded-2xl flex items-center justify-between group hover:border-yellow-500/30 transition-all shadow-xl overflow-hidden relative">
+                      <div className="absolute top-0 right-0 w-16 h-full bg-yellow-500/5 skew-x-[-20deg] translate-x-8"></div>
+                      <div className="flex items-center gap-5">
+                        <div className="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center text-black font-black text-2xl shadow-lg shrink-0 group-hover:rotate-12 transition-transform">
+                          <Ticket size={24} />
                         </div>
                         <div>
-                          <div className="text-3xl font-black text-white italic tracking-widest uppercase">{promo.code}</div>
-                          <div className="flex items-center gap-5 mt-3">
-                            <span className="text-yellow-500 font-black text-lg italic">§ {promo.reward_amount}</span>
-                            <div className="h-4 w-px bg-zinc-700"></div>
-                            <span className="text-zinc-500 text-sm font-bold uppercase">{promo.current_uses} / {promo.max_uses} USES</span>
-                            <div className="h-4 w-px bg-zinc-700"></div>
-                            <span className={`text-sm font-black uppercase ${promo.is_active ? 'text-green-500' : 'text-red-500'}`}>{promo.is_active ? 'ACTIVE' : 'INACTIVE'}</span>
+                          <div className="text-xl font-black text-white italic tracking-widest uppercase leading-none">{promo.code}</div>
+                          <div className="flex items-center gap-3 mt-2">
+                            <span className="text-yellow-500 font-black text-sm italic">§ {promo.reward_amount}</span>
+                            <div className="h-3 w-px bg-zinc-700"></div>
+                            <span className="text-zinc-500 text-[10px] font-bold uppercase">{promo.current_uses} / {promo.max_uses} USES</span>
+                            <div className="h-3 w-px bg-zinc-700"></div>
+                            <span className={`text-[10px] font-black uppercase ${promo.is_active ? 'text-green-500' : 'text-red-500'}`}>{promo.is_active ? 'ACTIVE' : 'INACTIVE'}</span>
                           </div>
                         </div>
                       </div>
-                      <div className="relative z-10 opacity-0 group-hover:opacity-100 flex items-center gap-3">
-                        <button onClick={() => adminService.togglePromoActive(promo.id, !promo.is_active).then(fetchData)} className={`p-4 rounded-2xl transition-all ${promo.is_active ? 'bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white' : 'bg-green-600/10 text-green-500 hover:bg-green-600 hover:text-black'}`}>{promo.is_active ? <EyeOff size={22} /> : <Eye size={22} />}</button>
-                        <button onClick={() => adminService.deletePromoCode(promo.id).then(fetchData)} className="p-4 bg-red-600/10 text-red-500 rounded-2xl hover:bg-red-600 hover:text-white transition-all"><Trash2 size={24} /></button>
+                      <div className="relative z-10 opacity-0 group-hover:opacity-100 flex items-center gap-2">
+                        <button onClick={() => adminService.togglePromoActive(promo.id, !promo.is_active).then(fetchData)} className={`p-2.5 rounded-xl transition-all ${promo.is_active ? 'bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white' : 'bg-green-600/10 text-green-500 hover:bg-green-600 hover:text-black'}`}>{promo.is_active ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+                        <button onClick={() => adminService.deletePromoCode(promo.id).then(fetchData)} className="p-2.5 bg-red-600/10 text-red-500 rounded-xl hover:bg-red-600 hover:text-white transition-all"><Trash2 size={18} /></button>
                       </div>
                     </div>
                   ))}
@@ -635,28 +739,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
           {/* ARENA TAB */}
           {activeTab === 'arena' && (
-            <div className="space-y-12 animate-in fade-in duration-1000">
+            <div className="space-y-8 animate-in fade-in duration-1000">
               <div>
-                <h2 className="text-6xl font-black text-white italic tracking-tighter">ARENA CORE</h2>
-                <p className="text-zinc-500 font-bold mt-4 text-xl italic uppercase">Quantum Environment Manipulation Control</p>
+                <h2 className="text-4xl font-black text-white italic tracking-tighter">ARENA CORE</h2>
+                <p className="text-zinc-500 font-bold mt-2 text-sm italic uppercase">Quantum Environment Manipulation Control</p>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                <div className="rounded-[4rem] border border-white/5 bg-white/[0.01] p-10 hover:border-red-600/30 transition-all shadow-2xl flex flex-col">
-                  <h3 className="text-2xl font-black text-white italic mb-10 border-b border-white/5 pb-4 flex items-center justify-between">Thematic Matrix <Palette size={24} className="text-red-600" /></h3>
-                  <div className="grid grid-cols-1 gap-4 flex-1">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="rounded-3xl border border-white/5 bg-white/[0.01] p-6 hover:border-red-600/30 transition-all shadow-2xl flex flex-col">
+                  <h3 className="text-xl font-black text-white italic mb-6 border-b border-white/5 pb-3 flex items-center justify-between">Thematic Matrix <Palette size={20} className="text-red-600" /></h3>
+                  <div className="grid grid-cols-1 gap-3 flex-1">
                     {['default', 'neon_blue', 'golden_arena', 'stealth_dark'].map(m => (
                       <button key={m} onClick={() => updateArena('global_mood', { ...arenaStatus.global_mood, theme: m })}
-                        className={`p-6 rounded-[2rem] flex items-center justify-center border-2 transition-all font-black text-sm uppercase tracking-widest ${arenaStatus.global_mood?.theme === m ? 'border-red-600 bg-white/5 text-white scale-105 shadow-xl' : 'border-transparent bg-black/40 text-zinc-600 hover:border-white/10'}`}>
+                        className={`p-4 rounded-xl flex items-center justify-center border-2 transition-all font-black text-xs uppercase tracking-widest ${arenaStatus.global_mood?.theme === m ? 'border-red-600 bg-white/5 text-white shadow-md scale-[1.02]' : 'border-transparent bg-black/40 text-zinc-600 hover:border-white/10'}`}>
                         {m.replace(/_/g, ' ')}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div className="rounded-[4rem] border border-white/5 bg-white/[0.01] p-10 hover:border-green-500/30 transition-all shadow-2xl flex flex-col">
-                  <h3 className="text-2xl font-black text-white italic mb-10 border-b border-white/5 pb-4 flex items-center justify-between">Visual FX <Sparkles size={24} className="text-green-500" /></h3>
-                  <div className="grid grid-cols-2 gap-4 flex-1">
+                <div className="rounded-3xl border border-white/5 bg-white/[0.01] p-6 hover:border-green-500/30 transition-all shadow-2xl flex flex-col">
+                  <h3 className="text-xl font-black text-white italic mb-6 border-b border-white/5 pb-3 flex items-center justify-between">Visual FX <Sparkles size={20} className="text-green-500" /></h3>
+                  <div className="grid grid-cols-2 gap-3 flex-1">
                     {[
                       { id: 'none', label: 'VOID', icon: EyeOff, color: 'text-zinc-600' },
                       { id: 'snow', label: 'SNOW', icon: Wind, color: 'text-blue-400' },
@@ -664,36 +768,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                       { id: 'confetti', label: 'CELEB', icon: Sparkles, color: 'text-green-500' }
                     ].map(fx => (
                       <button key={fx.id} onClick={() => updateArena('global_mood', { ...arenaStatus.global_mood, particles: fx.id })}
-                        className={`p-8 rounded-[2.5rem] flex flex-col items-center gap-4 transition-all border-2 ${arenaStatus.global_mood?.particles === fx.id ? 'bg-green-500 text-black border-green-500 scale-105 shadow-xl' : 'bg-black/40 text-zinc-600 border-transparent hover:border-white/10'}`}>
-                        <fx.icon size={32} />
-                        <span className="text-xs font-black uppercase tracking-[0.2em]">{fx.label}</span>
+                        className={`p-4 rounded-2xl flex flex-col items-center gap-3 transition-all border-2 ${arenaStatus.global_mood?.particles === fx.id ? 'bg-green-500 text-black border-green-500 shadow-md scale-[1.02]' : 'bg-black/40 text-zinc-600 border-transparent hover:border-white/10'}`}>
+                        <fx.icon size={24} />
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em]">{fx.label}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div className="rounded-[4rem] border border-white/5 bg-white/[0.01] p-10 hover:border-blue-500/30 transition-all shadow-2xl flex flex-col">
-                  <h3 className="text-2xl font-black text-white italic mb-10 border-b border-white/5 pb-4 flex items-center justify-between">Audio Stream <Music size={24} className="text-blue-500" /></h3>
-                  <div className="space-y-8 flex-1">
-                    <div className="bg-black/60 p-6 rounded-[2rem] border border-white/5 flex items-center justify-between">
-                      <span className="text-sm font-black uppercase tracking-widest text-zinc-500 italic">Streaming Status</span>
+                <div className="rounded-3xl border border-white/5 bg-white/[0.01] p-6 hover:border-blue-500/30 transition-all shadow-2xl flex flex-col">
+                  <h3 className="text-xl font-black text-white italic mb-6 border-b border-white/5 pb-3 flex items-center justify-between">Audio Stream <Music size={20} className="text-blue-500" /></h3>
+                  <div className="space-y-4 flex-1">
+                    <div className="bg-black/60 p-4 rounded-2xl border border-white/5 flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 italic">Streaming Status</span>
                       <button onClick={() => updateArena('audio_overlay', { ...arenaStatus.audio_overlay, enabled: !arenaStatus.audio_overlay?.enabled })}
-                        className={`w-16 h-8 rounded-full p-1 relative transition-all ${arenaStatus.audio_overlay?.enabled ? 'bg-blue-600' : 'bg-zinc-800'}`}>
-                        <div className={`w-6 h-6 rounded-full bg-white shadow-lg transition-all ${arenaStatus.audio_overlay?.enabled ? 'translate-x-8' : 'translate-x-0'}`}></div>
+                        className={`w-12 h-6 rounded-full p-1 relative transition-all ${arenaStatus.audio_overlay?.enabled ? 'bg-blue-600' : 'bg-zinc-800'}`}>
+                        <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-all ${arenaStatus.audio_overlay?.enabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
                       </button>
                     </div>
-                    <div className="bg-black/60 p-6 rounded-[2rem] border border-white/5">
-                      <label className="text-xs font-black uppercase tracking-widest text-zinc-500 italic block mb-4">Volume Control</label>
+                    <div className="bg-black/60 p-4 rounded-2xl border border-white/5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 italic block mb-3">Volume Control</label>
                       <input type="range" min="0" max="1" step="0.1" value={arenaStatus.audio_overlay?.volume || 0.5}
                         onChange={(e) => updateArena('audio_overlay', { ...arenaStatus.audio_overlay, volume: parseFloat(e.target.value) })}
                         className="w-full accent-blue-600" />
                     </div>
-                    <div className="bg-black/60 p-6 rounded-[2rem] border border-white/5">
-                      <label className="text-xs font-black uppercase tracking-widest text-zinc-500 italic block mb-2">Source URL</label>
+                    <div className="bg-black/60 p-4 rounded-2xl border border-white/5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 italic block mb-2">Source URL</label>
                       <input type="text" value={arenaStatus.audio_overlay?.url || ''}
                         onChange={(e) => updateArena('audio_overlay', { ...arenaStatus.audio_overlay, url: e.target.value })}
                         placeholder="https://..."
-                        className="w-full bg-black border border-white/10 rounded-2xl p-4 text-sm text-white font-black focus:border-blue-600 outline-none transition-all" />
+                        className="w-full bg-black border border-white/10 rounded-xl p-3 text-xs text-white font-black focus:border-blue-600 outline-none transition-all" />
                     </div>
                   </div>
                 </div>
@@ -705,30 +809,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
           {activeTab === 'logs' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-10 duration-700">
               <div>
-                <h2 className="text-6xl font-black text-zinc-400 italic tracking-tighter">AUDIT TRAIL</h2>
-                <p className="text-zinc-600 font-bold mt-4 text-xl italic uppercase">Chronological Security Event Log</p>
+                <h2 className="text-4xl font-black text-zinc-400 italic tracking-tighter">AUDIT TRAIL</h2>
+                <p className="text-zinc-600 font-bold mt-2 text-sm italic uppercase">Chronological Security Event Log</p>
               </div>
 
-              <div className="rounded-[2.5rem] border border-white/5 overflow-hidden shadow-xl">
+              <div className="rounded-2xl border border-white/5 overflow-hidden shadow-xl bg-black/40">
                 <div className="overflow-x-auto">
                   <table className="w-full text-right">
                     <thead>
-                      <tr className="bg-white/[0.02] text-sm font-black uppercase text-zinc-500 tracking-[0.1em] border-b border-white/5">
-                        <th className="p-6">الوقت</th>
-                        <th className="p-6">المشرف</th>
-                        <th className="p-6">الإجراء</th>
-                        <th className="p-6">التفاصيل</th>
+                      <tr className="bg-white/[0.02] text-[10px] font-black uppercase text-zinc-500 tracking-[0.1em] border-b border-white/5">
+                        <th className="p-4">الوقت</th>
+                        <th className="p-4">المشرف</th>
+                        <th className="p-4">الإجراء</th>
+                        <th className="p-4">التفاصيل</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/[0.02]">
                       {logs.map(log => (
                         <tr key={log.id} className="hover:bg-white/[0.02] transition-all">
-                          <td className="p-5 text-sm text-zinc-500 font-mono whitespace-nowrap">{new Date(log.created_at).toLocaleString('ar-EG')}</td>
-                          <td className="p-5 text-lg font-black italic text-white">{log.admin_username || 'SYSTEM'}</td>
-                          <td className="p-5">
-                            <span className="inline-block px-4 py-2 bg-white/5 rounded-xl text-sm font-black uppercase tracking-wider text-zinc-400">{log.action}</span>
+                          <td className="p-3 text-xs text-zinc-500 font-mono whitespace-nowrap">{new Date(log.created_at).toLocaleString('ar-EG')}</td>
+                          <td className="p-3 text-sm font-black italic text-white">{log.admin_username || 'SYSTEM'}</td>
+                          <td className="p-3">
+                            <span className="inline-block px-3 py-1 bg-white/5 rounded-lg text-[10px] font-black uppercase tracking-wider text-zinc-400">{log.action}</span>
                           </td>
-                          <td className="p-5 text-sm text-zinc-500 font-bold">{log.details ? JSON.stringify(log.details).slice(0, 80) : '—'}</td>
+                          <td className="p-3 text-xs text-zinc-500 font-bold">{log.details ? JSON.stringify(log.details).slice(0, 80) : '—'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -740,51 +844,376 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
           {/* SYSTEM TAB */}
           {activeTab === 'system' && (
-            <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in duration-700">
+            <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-700">
               <div>
-                <h2 className="text-6xl font-black text-red-600 italic tracking-tighter drop-shadow-[0_0_30px_rgba(255,0,0,0.3)]">SYSTEM CORE</h2>
-                <p className="text-zinc-500 font-bold mt-4 text-xl italic uppercase">Deep Maintenance & Recovery Controls</p>
+                <h2 className="text-4xl font-black text-red-600 italic tracking-tighter drop-shadow-[0_0_20px_rgba(255,0,0,0.3)]">SYSTEM CORE</h2>
+                <p className="text-zinc-500 font-bold mt-2 text-sm italic uppercase">Deep Maintenance & Recovery Controls</p>
               </div>
 
-              <div className="rounded-[4rem] border border-red-600/20 bg-red-600/[0.01] p-12 shadow-2xl space-y-10 relative overflow-hidden">
-                <div className="absolute -top-20 -right-20 w-60 h-60 bg-red-600/5 blur-[100px] rounded-full"></div>
+              <div className="rounded-3xl border border-red-600/20 bg-red-600/[0.01] p-8 shadow-2xl space-y-8 relative overflow-hidden">
+                <div className="absolute -top-20 -right-20 w-40 h-40 bg-red-600/5 blur-[80px] rounded-full"></div>
 
                 <div className="relative z-10">
-                  <h3 className="text-3xl font-black text-white italic mb-6 flex items-center gap-4"><Database className="text-red-600" size={32} /> Database Administration</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-black/60 rounded-[2rem] p-8 border border-white/5">
-                      <h4 className="text-lg font-black text-zinc-400 italic mb-4">Leaderboard Reset</h4>
-                      <p className="text-sm text-zinc-600 font-bold mb-6">مسح جميع إحصائيات المتصدرين وإعادة تعيين اللوحة.</p>
+                  <h3 className="text-xl font-black text-white italic mb-4 flex items-center gap-3"><Database className="text-red-600" size={24} /> Database Administration</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-black/60 rounded-2xl p-6 border border-white/5">
+                      <h4 className="text-sm font-black text-zinc-400 italic mb-2">Leaderboard Reset</h4>
+                      <p className="text-xs text-zinc-600 font-bold mb-4">مسح جميع إحصائيات المتصدرين وإعادة تعيين اللوحة.</p>
                       <button onClick={async () => { if (confirm('هل أنت متأكد من تصفير لوحة المتصدرين بالكامل؟')) { await leaderboardService.resetLeaderboard(); showStatus('تم تصفير لوحة المتصدرين'); fetchData(); } }}
-                        className="w-full py-4 bg-red-600/10 border border-red-500/20 rounded-2xl text-red-500 font-black text-base hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-3">
-                        <RotateCw size={20} /> Reset Leaderboard
+                        className="w-full py-3 bg-red-600/10 border border-red-500/20 rounded-xl text-red-500 font-black text-sm hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-2">
+                        <RotateCw size={16} /> Reset Leaderboard
                       </button>
                     </div>
-                    <div className="bg-black/60 rounded-[2rem] p-8 border border-white/5">
-                      <h4 className="text-lg font-black text-zinc-400 italic mb-4">Bulk Operations</h4>
-                      <p className="text-sm text-zinc-600 font-bold mb-6">أدوات تحكم جماعية للمستخدمين والبيانات.</p>
-                      <div className="flex flex-col gap-3">
-                        <button className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl text-zinc-400 font-black text-base hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-3">
-                          <Fingerprint size={20} /> Validate All Sessions
+                    <div className="bg-black/60 rounded-2xl p-6 border border-white/5">
+                      <h4 className="text-sm font-black text-zinc-400 italic mb-2">Bulk Operations</h4>
+                      <p className="text-xs text-zinc-600 font-bold mb-4">أدوات تحكم جماعية للمستخدمين والبيانات.</p>
+                      <div className="flex flex-col gap-2">
+                        <button className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-zinc-400 font-black text-sm hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2">
+                          <Fingerprint size={16} /> Validate All Sessions
                         </button>
-                        <button className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl text-zinc-400 font-black text-base hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-3">
-                          <Clock size={20} /> Sync Timestamps
+                        <button className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-zinc-400 font-black text-sm hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2">
+                          <Clock size={16} /> Sync Timestamps
                         </button>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="relative z-10 border-t border-white/5 pt-10">
-                  <h3 className="text-3xl font-black text-white italic mb-6 flex items-center gap-4"><Shield className="text-red-600" size={32} /> Security Reset</h3>
+                <div className="relative z-10 border-t border-white/5 pt-8">
+                  <h3 className="text-xl font-black text-white italic mb-4 flex items-center gap-3"><Shield className="text-red-600" size={24} /> Security Reset</h3>
                   <button onClick={async () => { if (confirm('إعادة تعيين كلمة سر الأدمن؟')) { await supabase.from('app_config').upsert({ key: 'admin_password', value: '123456' }); showStatus('تم إعادة تعيين كلمة السر إلى 123456'); } }}
-                    className="w-full py-6 bg-black border-2 border-red-600 text-red-500 font-black text-2xl rounded-[3rem] hover:bg-red-600 hover:text-white transition-all shadow-[0_20px_60px_rgba(220,38,38,0.15)] flex items-center justify-center gap-4 italic uppercase">
-                    <Key size={28} /> Reset Admin Password to Default
+                    className="w-full py-4 bg-black border border-red-600/50 text-red-500 font-black text-lg rounded-2xl hover:bg-red-600 hover:text-white transition-all shadow-[0_15px_40px_rgba(220,38,38,0.15)] flex items-center justify-center gap-3 italic uppercase">
+                    <Key size={20} /> Reset Admin Password to Default
                   </button>
                 </div>
               </div>
             </div>
           )}
+
+          {/* MAHMAH TAB */}
+          {activeTab === 'mahmah' && (
+            <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-10 duration-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-4xl font-black text-indigo-500 italic tracking-tighter">MAHMAH MANAGER</h2>
+                  <p className="text-zinc-500 font-bold mt-2 text-sm italic uppercase">Categories: {mahmahCategories.length} • Questions: {mahmahQuestions.length}</p>
+                </div>
+                <div className="flex gap-2">
+                  {selectedMahmahCategory && (
+                    <button onClick={() => setSelectedMahmahCategory(null)} className="px-6 py-3 bg-zinc-800 text-white rounded-xl font-black text-sm hover:bg-zinc-700 transition-all flex items-center gap-2">
+                      العودة للفئات
+                    </button>
+                  )}
+                  {!selectedMahmahCategory && (
+                    <button onClick={() => setIsAddingMahmahCategory(true)} className="px-6 py-3 bg-indigo-600/10 text-indigo-500 border border-indigo-500/20 rounded-xl font-black text-sm hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-2">
+                      <Plus size={18} /> فئة جديدة
+                    </button>
+                  )}
+                  {selectedMahmahCategory && (
+                    <button onClick={() => setIsAddingMahmahQuestion(true)} className="px-6 py-3 bg-indigo-600/10 text-indigo-500 border border-indigo-500/20 rounded-xl font-black text-sm hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-2">
+                      <Plus size={18} /> سؤال جديد
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {!selectedMahmahCategory && isAddingMahmahCategory && (
+                <form onSubmit={handleSaveMahmahCategory} className="bg-indigo-900/10 border border-indigo-500/20 rounded-3xl p-6 space-y-4 shadow-2xl relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                  <h3 className="text-xl font-black text-white flex items-center gap-2 mb-4"><Plus size={20} className="text-indigo-500" /> إضافة فئة جديدة</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">اسم الفئة</label>
+                      <input type="text" value={newMahmahCategory.name} onChange={e => setNewMahmahCategory({ ...newMahmahCategory, name: e.target.value })}
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold placeholder-white/20 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                        placeholder="الرياضة والكرة..." required />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">صورة الفئة</label>
+                      <div className="flex gap-2">
+                        <input type="text" value={newMahmahCategory.image_url} onChange={e => setNewMahmahCategory({ ...newMahmahCategory, image_url: e.target.value })}
+                          className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold placeholder-white/20 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                          placeholder="رابط الصورة أو ارفع صورة..." required />
+                        <label className={`shrink-0 w-12 h-12 flex items-center justify-center rounded-xl border border-dashed border-indigo-500/50 cursor-pointer hover:bg-indigo-500/10 transition-colors ${uploadingImage ? 'opacity-50 pointer-events-none' : ''}`}>
+                          <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              setUploadingImage(true);
+                              try { const url = await uploadToCloudinary(e.target.files[0]); setNewMahmahCategory({ ...newMahmahCategory, image_url: url }); }
+                              catch (err) { showStatus('فشل رفع الصورة', true); }
+                              setUploadingImage(false);
+                            }
+                          }} />
+                          {uploadingImage ? <RotateCw className="animate-spin text-indigo-500" size={20} /> : <Upload className="text-indigo-500" size={20} />}
+                        </label>
+                      </div>
+                      {newMahmahCategory.image_url && <img src={newMahmahCategory.image_url} alt="Preview" className="h-16 w-16 object-cover rounded-xl mt-2 border border-white/10" />}
+                    </div>
+                  </div>
+                  <div className="flex gap-3 justify-end mt-6">
+                    <button type="button" onClick={() => setIsAddingMahmahCategory(false)} className="px-6 py-3 bg-white/5 border border-white/10 text-white rounded-xl font-black text-sm hover:bg-white/10 transition-all">إلغاء</button>
+                    <button type="submit" disabled={uploadingImage} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black text-sm hover:bg-indigo-500 transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)]">حفظ الفئة</button>
+                  </div>
+                </form>
+              )}
+
+              {!selectedMahmahCategory ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {mahmahCategories.map(cat => {
+                    const count = mahmahQuestions.filter(q => q.category_id === cat.id).length;
+                    return (
+                      <div key={cat.id} className="bg-[#0a0a0a] border border-white/5 hover:border-indigo-500/30 rounded-2xl overflow-hidden shadow-lg transition-all group relative">
+                        <div className="aspect-video w-full bg-black relative">
+                          {cat.image_url ? (
+                            <img src={cat.image_url} alt={cat.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-zinc-900"><Brain size={32} className="text-zinc-700" /></div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
+                          <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end">
+                            <div>
+                              <h3 className="text-white font-black text-lg truncate">{cat.name}</h3>
+                              <p className="text-indigo-400 font-bold text-xs">{count} أسئلة</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-3 bg-black border-t border-white/5 flex gap-2">
+                          <button onClick={() => setSelectedMahmahCategory(cat)} className="flex-1 py-2 bg-indigo-600/10 text-indigo-400 rounded-lg font-bold text-sm hover:bg-indigo-600 hover:text-white transition-colors">عرض الأسئلة</button>
+                          <button onClick={() => handleDeleteMahmahCategory(cat.id)} className="w-10 flex items-center justify-center bg-red-600/10 text-red-500 rounded-lg hover:bg-red-600 hover:text-white transition-colors"><Trash2 size={16} /></button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {mahmahCategories.length === 0 && (
+                    <div className="col-span-full py-20 text-center text-zinc-600 font-black italic">لا توجد فئات حالياً.</div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4 p-6 bg-gradient-to-r from-indigo-900/20 to-black border border-indigo-500/20 rounded-3xl">
+                    <img src={selectedMahmahCategory.image_url} alt="cat" className="w-20 h-20 rounded-2xl object-cover border-2 border-indigo-500/50 shadow-[0_0_20px_rgba(79,70,229,0.3)]" />
+                    <div>
+                      <h2 className="text-3xl font-black text-white">{selectedMahmahCategory.name}</h2>
+                      <p className="text-indigo-400 font-bold">إدارة أسئلة هذه الفئة</p>
+                    </div>
+                  </div>
+
+                  {isAddingMahmahQuestion && (
+                    <form onSubmit={handleSaveMahmahQuestion} className="bg-indigo-900/10 border border-indigo-500/20 rounded-3xl p-6 space-y-4 shadow-2xl relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                      <h3 className="text-xl font-black text-white flex items-center gap-2 mb-4"><Plus size={20} className="text-indigo-500" /> إضافة سؤال</h3>
+                      
+                      <div className="grid grid-cols-1 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">مستوى الصعوبة والنقاط</label>
+                          <div className="flex gap-4">
+                            <label className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${newMahmahQuestion.points === 100 ? 'border-green-500 bg-green-500/10 text-green-400' : 'border-white/10 bg-black/50 text-zinc-500 hover:border-white/30'}`}>
+                              <input type="radio" className="hidden" checked={newMahmahQuestion.points === 100} onChange={() => setNewMahmahQuestion({ ...newMahmahQuestion, points: 100 })} />
+                              <span className="font-black text-lg">سهل</span>
+                              <span className="font-bold text-sm">100 نقطة</span>
+                            </label>
+                            <label className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${newMahmahQuestion.points === 300 ? 'border-yellow-500 bg-yellow-500/10 text-yellow-400' : 'border-white/10 bg-black/50 text-zinc-500 hover:border-white/30'}`}>
+                              <input type="radio" className="hidden" checked={newMahmahQuestion.points === 300} onChange={() => setNewMahmahQuestion({ ...newMahmahQuestion, points: 300 })} />
+                              <span className="font-black text-lg">متوسط</span>
+                              <span className="font-bold text-sm">300 نقطة</span>
+                            </label>
+                            <label className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${newMahmahQuestion.points === 500 ? 'border-red-500 bg-red-500/10 text-red-400' : 'border-white/10 bg-black/50 text-zinc-500 hover:border-white/30'}`}>
+                              <input type="radio" className="hidden" checked={newMahmahQuestion.points === 500} onChange={() => setNewMahmahQuestion({ ...newMahmahQuestion, points: 500 })} />
+                              <span className="font-black text-lg">صعب</span>
+                              <span className="font-bold text-sm">500 نقطة</span>
+                            </label>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">نص السؤال</label>
+                          <input type="text" value={newMahmahQuestion.text} onChange={e => setNewMahmahQuestion({ ...newMahmahQuestion, text: e.target.value })}
+                            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold placeholder-white/20 focus:outline-none focus:border-indigo-500 transition-all"
+                            placeholder="ما هو..." required />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">الإجابة</label>
+                          <input type="text" value={newMahmahQuestion.answer} onChange={e => setNewMahmahQuestion({ ...newMahmahQuestion, answer: e.target.value })}
+                            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold placeholder-white/20 focus:outline-none focus:border-indigo-500 transition-all"
+                            placeholder="الإجابة الصحيحة..." required />
+                        </div>
+                      </div>
+                      <div className="flex gap-3 justify-end mt-6">
+                        <button type="button" onClick={() => setIsAddingMahmahQuestion(false)} className="px-6 py-3 bg-white/5 border border-white/10 text-white rounded-xl font-black text-sm hover:bg-white/10 transition-all">إلغاء</button>
+                        <button type="submit" className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black text-sm hover:bg-indigo-500 transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)]">حفظ السؤال</button>
+                      </div>
+                    </form>
+                  )}
+
+                  <div className="bg-[#0a0a0a] rounded-3xl border border-white/5 overflow-hidden">
+                    <table className="w-full text-right border-collapse">
+                      <thead>
+                        <tr className="bg-black/50 text-zinc-500 text-xs font-black uppercase tracking-widest">
+                          <th className="p-4 pl-0">النقاط</th>
+                          <th className="p-4">السؤال</th>
+                          <th className="p-4">الإجابة</th>
+                          <th className="p-4 pr-0 text-center w-20">إجراء</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5 font-bold text-sm">
+                        {mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id).sort((a,b) => a.points - b.points).map(q => (
+                          <tr key={q.id} className="hover:bg-white/[0.02] transition-colors">
+                            <td className="p-4 pl-0">
+                              <span className={`px-3 py-1 rounded-full text-xs font-black ${q.points === 100 ? 'bg-green-500/20 text-green-400 border border-green-500/30' : q.points === 300 ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
+                                {q.points}
+                              </span>
+                            </td>
+                            <td className="p-4 text-white/90">{q.text}</td>
+                            <td className="p-4 text-emerald-400 font-black">{q.answer}</td>
+                            <td className="p-4 pr-0">
+                              <button onClick={() => handleDeleteMahmahQuestion(q.id)} className="w-full py-2 bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white rounded-lg transition-colors flex justify-center"><Trash2 size={16} /></button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id).length === 0 && (
+                      <div className="py-12 text-center text-zinc-500 font-bold italic">لا توجد أسئلة، أضف أسئلة جديدة.</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* STORE TAB */}
+          {activeTab === 'store' && (() => {
+            const filteredStoreItems = showInactive ? storeItems : storeItems.filter(i => i.is_active);
+            const activeCount = storeItems.filter(i => i.is_active).length;
+            const inactiveCount = storeItems.filter(i => !i.is_active).length;
+            return (
+            <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-10 duration-700">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <h2 className="text-4xl font-black text-emerald-500 italic tracking-tighter">STORE INVENTORY</h2>
+                  <p className="text-zinc-500 font-bold mt-2 text-sm italic uppercase">Active: {activeCount} • Hidden: {inactiveCount} • Total: {storeItems.length}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setShowInactive(!showInactive)} className={`px-4 py-3 rounded-xl font-black text-xs transition-all flex items-center gap-2 border ${showInactive ? 'bg-zinc-800 text-white border-white/20' : 'bg-white/5 text-zinc-400 border-white/5 hover:text-white'}`}>
+                    {showInactive ? <Eye size={14} /> : <EyeOff size={14} />} {showInactive ? 'الكل' : 'النشطة فقط'}
+                  </button>
+                  <button onClick={() => setEditingItem({ name: '', description: '', price: 1000, image_url: '', type: 'FRAME', is_active: true })} className="px-6 py-3 bg-emerald-600/10 text-emerald-500 border border-emerald-500/20 rounded-xl font-black text-sm hover:bg-emerald-600 hover:text-black transition-all flex items-center gap-2">
+                    <Plus size={18} /> Add New Item
+                  </button>
+                </div>
+              </div>
+
+              {editingItem && (
+                <form onSubmit={handleSaveStoreItem} className="bg-emerald-900/10 border border-emerald-500/20 rounded-3xl p-6 space-y-4 shadow-2xl relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                  <h3 className="text-xl font-black text-white italic mb-4">{editingItem.id ? 'Edit Item' : 'New Item'}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" placeholder="Name" value={editingItem.name} onChange={e => setEditingItem({ ...editingItem, name: e.target.value })} required className="bg-black border border-white/10 rounded-xl p-3 text-sm text-white font-black outline-none focus:border-emerald-500" />
+                    
+                    <div 
+                      className={`relative flex gap-2 p-1 rounded-xl border-2 border-dashed transition-all ${isDragging ? 'border-emerald-500 bg-emerald-500/10 scale-[1.02]' : 'border-transparent'}`}
+                      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                      onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+                      onDrop={async (e) => {
+                        e.preventDefault();
+                        setIsDragging(false);
+                        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                          setUploadingImage(true);
+                          const url = await uploadToCloudinary(e.dataTransfer.files[0]);
+                          if (url) setEditingItem({ ...editingItem, image_url: url });
+                          else showStatus('فشل رفع الملف', true);
+                          setUploadingImage(false);
+                        }
+                      }}
+                    >
+                      <input type="text" placeholder="Image URL (or drop file here)" value={editingItem.image_url} onChange={e => setEditingItem({ ...editingItem, image_url: e.target.value })} required className="bg-black border border-white/10 rounded-xl p-3 text-sm text-white font-black outline-none focus:border-emerald-500 flex-1" />
+                      <label className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-4 flex items-center justify-center cursor-pointer hover:bg-emerald-500 hover:text-black transition-all text-emerald-500 min-w-[50px]" title="رفع ملف أو سحبه وإفلاته">
+                        {uploadingImage ? <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span> : <Upload size={16} />}
+                        <input type="file" accept="*/*" className="hidden" onChange={async (e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            setUploadingImage(true);
+                            const url = await uploadToCloudinary(e.target.files[0]);
+                            if (url) setEditingItem({ ...editingItem, image_url: url });
+                            else showStatus('فشل رفع الملف', true);
+                            setUploadingImage(false);
+                          }
+                        }} />
+                      </label>
+                    </div>
+                    <input type="number" placeholder="Price" value={editingItem.price} onChange={e => setEditingItem({ ...editingItem, price: Number(e.target.value) })} required className="bg-black border border-white/10 rounded-xl p-3 text-sm text-white font-black outline-none focus:border-emerald-500" />
+                    <select value={editingItem.type} onChange={e => setEditingItem({ ...editingItem, type: e.target.value })} className="bg-black border border-white/10 rounded-xl p-3 text-sm text-white font-black outline-none focus:border-emerald-500 appearance-none">
+                      <option value="FRAME">FRAME (إطار)</option>
+                      <option value="BADGE">BADGE (شارة)</option>
+                      <option value="EFFECT">EFFECT (تأثير)</option>
+                    </select>
+                    <div className="flex gap-2 relative group md:col-span-2">
+                      <input type="text" placeholder="Glow Color (e.g. from-purple-500 to-pink-500)" value={(() => {
+                        try {
+                          const config = typeof editingItem.config === 'string' ? JSON.parse(editingItem.config || '{}') : (editingItem.config || {});
+                          return config.glowColor || '';
+                        } catch { return ''; }
+                      })()} onChange={e => {
+                        try {
+                          const config = typeof editingItem.config === 'string' ? JSON.parse(editingItem.config || '{}') : (editingItem.config || {});
+                          config.glowColor = e.target.value;
+                          setEditingItem({ ...editingItem, config: JSON.stringify(config) });
+                        } catch {
+                          setEditingItem({ ...editingItem, config: JSON.stringify({ glowColor: e.target.value }) });
+                        }
+                      }} className="bg-black border border-white/10 rounded-xl p-3 text-sm text-white font-black outline-none focus:border-emerald-500 flex-1" />
+                      
+                      {/* Live Preview */}
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-black border border-white/10 relative overflow-hidden shrink-0">
+                        <div className={`absolute inset-0 bg-gradient-to-br ${(() => {
+                          try {
+                            const config = typeof editingItem.config === 'string' ? JSON.parse(editingItem.config || '{}') : (editingItem.config || {});
+                            return config.glowColor || '';
+                          } catch { return ''; }
+                        })()} opacity-50`}></div>
+                      </div>
+                    </div>
+                  </div>
+                  <textarea placeholder="الوصف (Description)" value={editingItem.description || ''} onChange={e => setEditingItem({ ...editingItem, description: e.target.value })} rows={2} className="w-full bg-black border border-white/10 rounded-xl p-3 text-sm text-white font-bold outline-none focus:border-emerald-500 resize-none" />
+                  <div className="flex justify-end gap-3 pt-2">
+                    <button type="button" onClick={() => setEditingItem(null)} className="px-4 py-2 bg-zinc-800 text-zinc-300 rounded-xl font-black text-xs hover:bg-zinc-700">Cancel</button>
+                    <button type="submit" disabled={isLoading} className="px-6 py-2 bg-emerald-500 text-black rounded-xl font-black text-xs hover:bg-emerald-400">Save Item</button>
+                  </div>
+                </form>
+              )}
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {filteredStoreItems.map(item => {
+                  const getImageUrl = (item: any) => {
+                    if (!item.image_url) return '';
+                    if (item.image_url.startsWith('http') || item.image_url.startsWith('/')) return item.image_url;
+                    if (item.type === 'FRAME') return `/frame/${item.image_url}`;
+                    return `/assets/${item.image_url}`;
+                  };
+                  return (
+                    <div key={item.id} className={`bg-gradient-to-b from-zinc-900 to-black border rounded-2xl p-4 flex flex-col items-center gap-3 relative group transition-all overflow-hidden ${item.is_active ? 'border-white/5 hover:border-emerald-500/30 hover:shadow-[0_10px_30px_rgba(16,185,129,0.1)]' : 'border-red-900/20 opacity-40 grayscale'}`}>
+                      <div className="absolute top-0 right-0 w-24 h-full bg-emerald-500/5 skew-x-[-20deg] translate-x-12 group-hover:bg-emerald-500/10 transition-colors"></div>
+                      <div className="w-16 h-16 relative flex items-center justify-center z-10">
+                        {item.image_url ? (
+                          <img src={getImageUrl(item)} alt={item.name} className={`max-w-full max-h-full object-contain drop-shadow-2xl group-hover:scale-110 transition-transform duration-500 ${item.type === 'FRAME' ? 'scale-[1.45]' : 'scale-125'}`} onError={(e) => { (e.target as any).style.display = 'none'; }} />
+                        ) : (
+                          <span className="text-zinc-600 text-[10px] font-bold">No Image</span>
+                        )}
+                      </div>
+                      <div className="text-center w-full z-10">
+                        <div className="text-sm font-black text-white truncate px-2">{item.name}</div>
+                        <div className="text-xs font-bold text-emerald-500 mt-1">{item.price} §</div>
+                        <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1 bg-white/5 inline-block px-2 py-0.5 rounded-md">{item.type}</div>
+                      </div>
+                      <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-all z-20 translate-x-4 group-hover:translate-x-0">
+                        <button onClick={() => setEditingItem(item)} className="p-2 bg-blue-500/20 text-blue-400 rounded-xl hover:bg-blue-500 hover:text-white transition-all shadow-lg backdrop-blur-sm"><Edit size={14} /></button>
+                        <button onClick={() => handleDeleteStoreItem(item.id)} className="p-2 bg-red-500/20 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-lg backdrop-blur-sm"><Trash2 size={14} /></button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+          })()}
         </div>
       </div>
     </div>

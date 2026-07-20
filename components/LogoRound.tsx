@@ -419,25 +419,40 @@ export const LogoRound: React.FC<LogoRoundProps> = ({ onHome, isOBS }) => {
 
     useEffect(() => {
         const unsubscribe = chatService.onMessage((msg) => {
-            const content = msg.content.trim().toLowerCase();
+            // Strip Kick emote tags [emote:id:name], HTML entities, and extra whitespace
+            const rawContent = msg.content
+                .replace(/\[emote:\d+:[^\]]*\]/gi, '')
+                .replace(/&[a-z]+;/gi, '')
+                .replace(/<[^>]*>/g, '')
+                .trim()
+                .toLowerCase();
             const username = msg.user.username;
 
             if (phaseRef.current === 'LOBBY') {
-                if (content === configRef.current.joinKeyword.toLowerCase()) {
-                    setParticipants(prev => {
-                        if (prev.length >= configRef.current.maxPlayers) return prev;
-                        if (prev.some(p => p.username === username)) return prev;
+                const keyword = configRef.current.joinKeyword.trim().toLowerCase();
+                if (rawContent === keyword || rawContent.includes(keyword)) {
+                    // Check if banned before allowing them to join
+                    leaderboardService.checkIsBanned(username).then(isBanned => {
+                        if (isBanned) {
+                            chatService.sendMessage(`@${username} 🚫 عذراً، لا يمكنك المشاركة. حسابك محظور من النظام!`);
+                            return;
+                        }
 
-                        // Fetch real Kick avatar asynchronously
-                        chatService.fetchKickAvatar(username).then(avatar => {
-                            if (avatar) {
-                                setParticipants(current => current.map(p =>
-                                    p.username === username ? { ...p, avatar } : p
-                                ));
-                            }
+                        setParticipants(prev => {
+                            if (prev.length >= configRef.current.maxPlayers) return prev;
+                            if (prev.some(p => p.username === username)) return prev;
+
+                            // Fetch real Kick avatar asynchronously
+                            chatService.fetchKickAvatar(username).then(avatar => {
+                                if (avatar) {
+                                    setParticipants(current => current.map(p =>
+                                        p.username === username ? { ...p, avatar } : p
+                                    ));
+                                }
+                            });
+
+                            return [...prev, msg.user];
                         });
-
-                        return [...prev, msg.user];
                     });
                 }
             }
@@ -446,7 +461,7 @@ export const LogoRound: React.FC<LogoRoundProps> = ({ onHome, isOBS }) => {
                 if (!participantsRef.current.some(p => p.username === username)) return;
 
                 const brand = currentBrandRef.current;
-                const isCorrect = fuzzyMatch(content, brand);
+                const isCorrect = fuzzyMatch(rawContent, brand);
 
                 if (isCorrect) {
                     handleWin(msg.user);
@@ -460,11 +475,18 @@ export const LogoRound: React.FC<LogoRoundProps> = ({ onHome, isOBS }) => {
         setRoundWinner(user);
         setScores(prev => ({ ...prev, [user.username]: (prev[user.username] || 0) + 1 }));
         setPhase('REVEAL');
+        
+        // إرسال رسالة في الشات كـ بوت
+        if (currentBrandRef.current) {
+            chatService.sendMessage(`🎉 البطل @${user.username} عرف الشعار الصحيح (${currentBrandRef.current.name})! 🔥`);
+        }
 
         setTimeout(() => {
             if (currentRound >= config.totalRounds) {
                 setPhase('FINALE');
                 leaderboardService.recordWin(user.username, user.avatar || '', 200);
+                // رسالة نهاية الجولة
+                chatService.sendMessage(`🏆 انتهت لعبة تقصي الحقائق (الشعارات)! مبروك للفائز وحظاً أوفر للجميع! 🎁`);
             } else {
                 setCurrentRound(r => r + 1);
                 nextLogo();
@@ -630,11 +652,11 @@ export const LogoRound: React.FC<LogoRoundProps> = ({ onHome, isOBS }) => {
                         </div>
                     </div>
 
-                    <div className="w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 px-6 mb-12 overflow-y-auto max-h-[350px] custom-scrollbar">
+                    <div className="w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 px-6 mb-12 overflow-y-auto max-h-[350px] custom-scrollbar" style={{ overflow: 'visible' }}>
                         {participants.map((p, i) => (
-                            <div key={p.username} className="glass-card p-3 rounded-[1.5rem] border border-white/5 flex flex-col items-center gap-3 animate-in zoom-in group hover:border-blue-500/30 transition-all bg-white/5" style={{ animationDelay: `${i * 30}ms` }}>
-                                <div className="w-16 h-16 rounded-[1.25rem] border-2 border-white/10 shadow-xl group-hover:scale-105 transition-transform bg-zinc-900 flex items-center justify-center overflow-visible">
-                                    <ProAvatar username={p.username} url={p.avatar} size="w-16 h-16" className="overflow-visible" />
+                            <div key={p.username} className="glass-card p-4 pt-6 rounded-[1.5rem] border border-white/5 flex flex-col items-center gap-3 animate-in zoom-in group hover:border-blue-500/30 transition-all bg-white/5" style={{ animationDelay: `${i * 30}ms`, overflow: 'visible' }}>
+                                <div className="relative" style={{ width: '5rem', height: '5rem', overflow: 'visible' }}>
+                                    <ProAvatar username={p.username} url={p.avatar} size="w-20 h-20" className="overflow-visible" />
                                 </div>
                                 <span className="font-black text-white text-sm truncate w-full text-center">{p.username}</span>
                             </div>

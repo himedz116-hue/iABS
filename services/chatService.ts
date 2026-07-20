@@ -23,6 +23,11 @@ class ChatService {
   private channel: any = null;
   private avatarCache: Record<string, string> = {};
   private pendingAvatarFetches: Record<string, Promise<string>> = {};
+  private currentChatroomId: number | null = null;
+  
+  // Kick Bot Tokens
+  private KICK_BOT_ACCESS_TOKEN = "MTU4YJK4N2UTMDE1YI0ZYZY2LTHHYJYTNDQ2YJJMMWMZNJZH";
+  private KICK_BOT_REFRESH_TOKEN = "MDY0MJQ4MZCTZJE3OS01OTQWLWFMZTATZMU5YJNHMGE4NZC1";
 
   private KNOWN_CHATROOM_IDS: Record<string, number> = {
     // We removed 'iabs' from here to force a fresh lookup from the API, 
@@ -105,6 +110,7 @@ class ChatService {
         throw new Error(`لم يتم العثور على القناة: ${slug}`);
       }
 
+      this.currentChatroomId = chatroomId;
       console.log(`[ChatService] Connecting to Chatroom: ${chatroomId}`);
 
       // Initialize Pusher with a fresh instance
@@ -135,6 +141,12 @@ class ChatService {
           role: getRoleFromIdentity(data.sender?.identity),
           timestamp: Date.now()
         };
+
+        // ميزة تفاعل البوت التلقائية (كلمة: مرحبا)
+        const rawContent = message.content.replace(/\[emote:\d+:[^\]]*\]/gi, '').replace(/<[^>]*>/g, '').trim();
+        if ((rawContent.includes('مرحبا') || rawContent.includes('مرحباً') || rawContent.includes('هلا')) && message.user.username.toLowerCase() !== 'iabsbot') {
+            this.sendMessage(`أهلين @${message.user.username} 👋 نورت البث!`);
+        }
 
         // Safety: ensure one listener failure doesn't stop others
         this.listeners.forEach(cb => {
@@ -203,6 +215,40 @@ class ChatService {
 
   private notifyStatus(connected: boolean, error: boolean, details: string) {
     this.statusListeners.forEach(cb => cb(connected, error, details));
+  }
+
+  // Send a message to the currently connected Kick channel using the Bot token
+  async sendMessage(content: string) {
+    if (!this.currentChatroomId) {
+      console.warn('[ChatService] Cannot send message: not connected to any channel.');
+      return false;
+    }
+
+    try {
+      const response = await fetch(`/kick-api/public/v1/chatrooms/${this.currentChatroomId}/messages`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${this.KICK_BOT_ACCESS_TOKEN}`,
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          content,
+          type: "message"
+        })
+      });
+
+      if (!response.ok) {
+        console.error('[ChatService] Failed to send message. Status:', response.status);
+        const text = await response.text();
+        console.error('[ChatService] Response:', text);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.error('[ChatService] Exception while sending message:', e);
+      return false;
+    }
   }
 
   async fetchKickAvatar(username: string): Promise<string> {

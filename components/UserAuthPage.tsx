@@ -118,7 +118,7 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
         if (step !== 'KICK_VERIFY') return;
         setChatConnected(false);
 
-        const kickChannel = localStorage.getItem('kick_channel_name') || 'iabs';
+        const kickChannel = 'iabs';
         chatService.connect(kickChannel);
 
         // Track connection status
@@ -132,9 +132,16 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
 
             console.log(`[Verify] From: ${msg.user.username}, Content: "${content}", Expect: "${expectedCode}"`);
 
-            // Accept if the message contains the exact code (from ANY user - the Kick username matching happens on registration)
+            // Only process if the message contains the code
             if (content === expectedCode || content.includes(expectedCode)) {
-                handleVerificationSuccess(msg.user.avatar);
+                // SECURITY FIX: Must match the exact Kick username entered in the form
+                if (msg.user.username.toLowerCase() === kickUsernameRef.current.toLowerCase()) {
+                    handleVerificationSuccess(msg.user.avatar);
+                } else {
+                    // Someone else sent the code! Reject and return to main page
+                    setFormError(`عذراً، الحساب الذي أرسل الكود (${msg.user.username}) لا يطابق الحساب المسجل (${kickUsernameRef.current}). يرجى المحاولة مرة أخرى.`);
+                    setStep('REGISTER');
+                }
             }
         });
 
@@ -303,15 +310,15 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
     // ========= RENDER =========
 
     return (
-        <div className="fixed inset-0 z-50 bg-black text-white font-sans overflow-hidden flex flex-col items-center justify-center" dir="rtl">
+        <div className="fixed inset-0 z-50 bg-black text-white font-sans overflow-hidden flex flex-col items-center md:justify-center" dir="rtl">
             {/* Global Back Button */}
             {onBack && step !== 'VERIFIED' && step !== 'VERIFYING' && (
                 <button
                     onClick={onBack}
-                    className="fixed top-8 right-8 z-[100] flex items-center gap-2 text-gray-400 hover:text-white transition-all bg-white/5 border border-white/10 px-5 py-2.5 rounded-2xl font-bold uppercase tracking-widest text-[10px] group shadow-2xl"
+                    className="fixed top-4 right-4 md:top-8 md:right-8 z-[100] flex items-center gap-1.5 md:gap-2 text-gray-400 hover:text-white transition-all bg-white/5 border border-white/10 px-3 py-1.5 md:px-5 md:py-2.5 rounded-xl md:rounded-2xl font-bold uppercase tracking-widest text-[8px] md:text-[10px] group shadow-xl"
                 >
-                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                    العودة لبروتوكول الأمان
+                    <ArrowRight size={14} className="md:w-[18px] md:h-[18px] group-hover:translate-x-1 transition-transform" />
+                    العودة
                 </button>
             )}
 
@@ -337,39 +344,38 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
 
             {/* ====== REGISTER STEP ====== */}
             {step === 'REGISTER' && (
-                <div className={`relative z-10 w-full max-w-lg mx-auto px-6 slide-up ${shake ? 'animate-shake' : ''}`}>
-
+                <div className={`relative z-10 w-full max-w-lg mx-auto px-4 md:px-6 h-full overflow-y-auto custom-scrollbar pb-10 pt-4 ${shake ? 'animate-shake' : ''}`}>
 
                     {/* Header */}
-                    <div className="text-center mb-8">
-                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-red-600/20 to-red-900/20 border border-red-500/20 mb-5 glow-pulse">
-                            <User size={36} className="text-red-500" />
+                    <div className="text-center mb-6">
+                        <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-red-600/20 to-red-900/20 border border-red-500/20 mb-4 glow-pulse">
+                            <User size={28} className="text-red-500" />
                         </div>
-                        <h1 className="text-4xl md:text-5xl font-black italic tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-neutral-400 mb-2">
+                        <h1 className="text-3xl md:text-5xl font-black italic tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-neutral-400 mb-1">
                             إنشاء حساب
                         </h1>
-                        <p className="text-red-500 font-bold tracking-[0.3em] text-[10px] uppercase">CREATE YOUR ACCOUNT</p>
+                        <p className="text-red-500 font-bold tracking-[0.3em] text-[9px] md:text-[10px] uppercase">CREATE YOUR ACCOUNT</p>
                     </div>
 
                     {/* Form Card */}
-                    <div className="bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-[2rem] p-6 md:p-8 shadow-2xl space-y-5">
+                    <div className="bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-[1.5rem] md:rounded-[2rem] p-5 md:p-8 shadow-2xl space-y-4 md:space-y-5">
 
                         {/* Kick Avatar Preview */}
                         {(kickAvatar || isLoadingAvatar) && (
-                            <div className="flex justify-center -mt-2 mb-2">
+                            <div className="flex justify-center -mt-1 mb-1">
                                 <div className="relative">
                                     <div className={`transition-all duration-500`}>
                                         {isLoadingAvatar ? (
-                                            <div className="w-20 h-20 rounded-2xl border-2 border-white/10 flex items-center justify-center bg-black/60">
-                                                <Loader2 size={24} className="animate-spin text-red-500" />
+                                            <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl border-2 border-white/10 flex items-center justify-center bg-black/60">
+                                                <Loader2 size={20} className="animate-spin text-red-500" />
                                             </div>
                                         ) : kickAvatar ? (
-                                            <ProAvatar url={kickAvatar} username={kickUsername} size="w-24 h-24" className="overflow-visible" />
+                                            <ProAvatar url={kickAvatar} username={kickUsername} size="w-18 h-18 md:w-24 md:h-24" className="overflow-visible" />
                                         ) : null}
                                     </div>
                                     {kickAvatar && (
-                                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-black z-20">
-                                            <CheckCircle size={12} className="text-black" />
+                                        <div className="absolute -bottom-1 -right-1 w-5 h-5 md:w-6 md:h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-black z-20">
+                                            <CheckCircle size={10} className="text-black" />
                                         </div>
                                     )}
                                 </div>
@@ -378,7 +384,7 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
 
                         {/* Name */}
                         <div>
-                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block flex items-center gap-2">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 block flex items-center gap-2">
                                 <User size={10} /> الاسم
                             </label>
                             <input
@@ -392,7 +398,7 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
 
                         {/* Kick Username */}
                         <div>
-                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block flex items-center gap-2">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 block flex items-center gap-2">
                                 <span className="text-green-400">K</span> حساب Kick <span className="text-red-400">*مطلوب</span>
                             </label>
                             <div className="relative">
@@ -418,7 +424,7 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
 
                         {/* Discord (Optional) */}
                         <div>
-                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block flex items-center gap-2">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 block flex items-center gap-2">
                                 💬 ديسكورد <span className="text-gray-600">(اختياري)</span>
                             </label>
                             <input
@@ -433,11 +439,11 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
 
                         {/* Password */}
                         <div>
-                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 block flex items-center gap-2">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block flex items-center gap-2">
                                 <Lock size={10} /> كلمة السر <span className="text-gray-600">(6 أحرف أو أرقام)</span>
                             </label>
-                            <div className="flex items-center gap-2" dir="ltr">
-                                <div className="flex gap-2 flex-1 justify-center">
+                            <div className="flex items-center gap-1.5 md:gap-2" dir="ltr">
+                                <div className="flex gap-1.5 md:gap-2 flex-1 justify-center">
                                     {password.map((digit, i) => (
                                         <input
                                             key={`p-${i}`}
@@ -448,8 +454,9 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
                                             value={digit}
                                             onChange={e => handlePassInput(i, e.target.value, false)}
                                             onKeyDown={e => handlePassKeyDown(i, e, false)}
+                                            onFocus={e => e.target.select()}
                                             className={`
-                                                w-11 h-14 bg-black/60 border-2 rounded-xl text-center text-xl font-black text-white
+                                                w-10 h-12 md:w-11 md:h-14 bg-black/60 border-2 rounded-xl text-center text-lg md:text-xl font-black text-white
                                                 focus:outline-none focus:border-red-500 focus:shadow-[0_0_15px_rgba(220,38,38,0.3)]
                                                 transition-all duration-200
                                                 ${digit ? 'border-red-500/40' : 'border-white/10'}
@@ -457,7 +464,7 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
                                         />
                                     ))}
                                 </div>
-                                <button onClick={() => setShowPassword(!showPassword)} className="p-2 text-gray-500 hover:text-white transition-colors">
+                                <button onClick={() => setShowPassword(!showPassword)} className="p-2 text-gray-500 hover:text-white transition-colors flex-shrink-0">
                                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                 </button>
                             </div>
@@ -465,11 +472,11 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
 
                         {/* Confirm Password */}
                         <div>
-                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 block flex items-center gap-2">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block flex items-center gap-2">
                                 <Shield size={10} /> تأكيد كلمة السر
                             </label>
-                            <div className="flex items-center gap-2" dir="ltr">
-                                <div className="flex gap-2 flex-1 justify-center">
+                            <div className="flex items-center gap-1.5 md:gap-2" dir="ltr">
+                                <div className="flex gap-1.5 md:gap-2 flex-1 justify-center">
                                     {confirmPassword.map((digit, i) => (
                                         <input
                                             key={`c-${i}`}
@@ -480,8 +487,9 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
                                             value={digit}
                                             onChange={e => handlePassInput(i, e.target.value, true)}
                                             onKeyDown={e => handlePassKeyDown(i, e, true)}
+                                            onFocus={e => e.target.select()}
                                             className={`
-                                                w-11 h-14 bg-black/60 border-2 rounded-xl text-center text-xl font-black text-white
+                                                w-10 h-12 md:w-11 md:h-14 bg-black/60 border-2 rounded-xl text-center text-lg md:text-xl font-black text-white
                                                 focus:outline-none focus:border-green-500 focus:shadow-[0_0_15px_rgba(34,197,94,0.3)]
                                                 transition-all duration-200
                                                 ${digit ? 'border-green-500/40' : 'border-white/10'}
@@ -489,7 +497,7 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
                                         />
                                     ))}
                                 </div>
-                                <button onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="p-2 text-gray-500 hover:text-white transition-colors">
+                                <button onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="p-2 text-gray-500 hover:text-white transition-colors flex-shrink-0">
                                     {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                 </button>
                             </div>
@@ -504,20 +512,20 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
                         )}
 
                         {/* Continue Button */}
-                        <div className="space-y-4">
+                        <div className="pt-1">
                             <button
                                 onClick={handleContinue}
-                                className="w-full bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white font-black py-4 rounded-2xl text-base italic uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-3 shadow-xl shadow-red-900/20"
+                                className="w-full bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white font-black py-3.5 md:py-4 rounded-2xl text-sm md:text-base italic uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-3 shadow-xl shadow-red-900/20"
                             >
-                                <ArrowRight size={20} /> متابعة
+                                <ArrowRight size={18} /> متابعة
                             </button>
                         </div>
                     </div>
 
                     {/* Footer */}
-                    <div className="mt-6 text-center opacity-30 flex items-center justify-center gap-2">
-                        <Sparkles size={14} />
-                        <span className="text-[10px] uppercase tracking-[0.4em] font-bold">SECURED BY iABS SYSTEM</span>
+                    <div className="mt-5 text-center opacity-30 flex items-center justify-center gap-2 pb-4">
+                        <Sparkles size={12} />
+                        <span className="text-[9px] uppercase tracking-[0.4em] font-bold">SECURED BY iABS SYSTEM</span>
                     </div>
                 </div>
             )}

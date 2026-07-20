@@ -25,6 +25,7 @@ import { WordBuilder } from './components/WordBuilder';
 import { GlassBridgeV2 } from './components/GlassBridgeV2';
 import { FloorIsLava } from './components/FloorIsLava';
 import { EmojiCode } from './components/EmojiCode';
+import { MahmahGame } from './components/MahmahGame/MahmahGame';
 import { LetterHexagonGame } from './components/LetterHexagonGame';
 import { BuzzerPad } from './components/BuzzerPad';
 import { AdminDashboard } from './components/AdminDashboard';
@@ -213,7 +214,7 @@ const App: React.FC = () => {
 
   // Global Chat Connection
   useEffect(() => {
-    const channel = localStorage.getItem('kick_channel_name') || 'iabs';
+    const channel = 'iabs'; // Forced to iabs
     console.log(`[App] Initializing Chat Connection for: ${channel}`);
     chatService.connect(channel);
 
@@ -339,7 +340,7 @@ const App: React.FC = () => {
   };
 
   const PremiumGameButton = ({
-    title, icon: Icon, onClick, isPrimary = false, isComingSoon = false,
+    title, icon: Icon, imageUrl, onClick, isPrimary = false, isComingSoon = false,
     comingSoonText = "قريباً", hasOBS = false, index, total,
     onMoveUp, onMoveDown, isEditMode, isVisible = true, onToggleVisibility, onToggleSize
   }: any) => {
@@ -371,11 +372,17 @@ const App: React.FC = () => {
 
           <div className="relative z-30 flex-shrink-0 transition-all duration-500 transform group-hover:scale-110 group-hover:rotate-6 flex items-center justify-center">
             <div className={`relative ${isPrimary ? 'w-7 h-7' : 'w-6 h-6'} flex items-center justify-center ${isComingSoon ? 'opacity-30' : ''}`}>
-              <Icon size={isPrimary ? 20 : 16} color="#FFFFFF" strokeWidth={2.5} className="drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
+              {imageUrl ? (
+                <div className="bg-white/90 rounded-md p-0.5 w-full h-full flex items-center justify-center shadow-inner border border-white/20">
+                  <img src={imageUrl} alt={title} className="w-full h-full object-contain drop-shadow-sm" />
+                </div>
+              ) : (
+                <Icon size={isPrimary ? 20 : 16} color="#FFFFFF" strokeWidth={2.5} className="drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
+              )}
             </div>
           </div>
 
-          <span className={`relative z-30 text-white font-black italic tracking-tighter uppercase leading-none bg-transparent ${isComingSoon ? 'opacity-30' : ''}`}>
+          <span className={`relative z-30 whitespace-nowrap text-white font-black italic tracking-tighter uppercase leading-none bg-transparent ${isComingSoon ? 'opacity-30' : ''}`}>
             {title}
           </span>
 
@@ -450,11 +457,12 @@ const App: React.FC = () => {
       case 'GLASS_BRIDGE_V2': return <GlassBridgeV2 onHome={handleGoHome} isOBS={obsMode} />;
       case 'FLOOR_IS_LAVA': return <FloorIsLava onHome={handleGoHome} isOBS={obsMode} />;
       case 'EMOJI_CODE': return <EmojiCode onHome={handleGoHome} isOBS={obsMode} />;
+      case 'MAHMAH_GAME': return <MahmahGame onBack={handleGoHome} />;
       case 'LETTER_GAME': return <LetterHexagonGame onHome={handleGoHome} isOBS={obsMode} onToggleOBSPreview={() => setShowObsPreview(!showObsPreview)} obsPreviewActive={showObsPreview} />;
       case 'BUZZER_PAD': return <BuzzerPad />;
 
       case 'USER_DASHBOARD': return (
-        <div className="flex-1 w-full max-w-4xl mx-auto flex flex-col p-2 md:p-3 animate-in slide-in-from-bottom-20 duration-1000">
+        <div className="flex-1 w-full max-w-7xl mx-auto flex flex-col p-2 md:p-6 animate-in slide-in-from-bottom-20 duration-1000">
           <UserDashboard
             onLogout={handleLogout}
             userData={(() => {
@@ -746,7 +754,7 @@ const App: React.FC = () => {
 
               <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 px-1"
                 style={{perspective:'1000px'}}>
-                {games.filter(g => !g.is_primary && g.view_id !== 'LETTER_GAME').map((game, idx) => (
+                {games.filter(g => !g.is_primary).map((game, idx) => (
                   <div key={game.id}
                     className="animate-in slide-in-from-bottom duration-500"
                     style={{
@@ -758,6 +766,7 @@ const App: React.FC = () => {
                     <PremiumGameButton
                       title={game.title}
                       icon={ICON_MAP[game.icon_name] || Sparkles}
+                      imageUrl={game.view_id === 'LETTER_GAME' ? '/photo/image76.png' : undefined}
                       onClick={() => setCurrentView(game.view_id)}
                       isComingSoon={game.is_coming_soon}
                       comingSoonText={game.coming_soon_text}
@@ -774,28 +783,6 @@ const App: React.FC = () => {
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* Hamoudi Letters Custom Button */}
-            <div className="w-full max-w-sm mb-6 animate-in slide-in-from-bottom duration-700 delay-500" style={{ transform: 'rotateX(2deg) translateZ(10px)', transformStyle: 'preserve-3d', perspective: '800px' }}>
-              <button 
-                onClick={() => setCurrentView('LETTER_GAME')}
-                className="group relative flex items-center justify-center gap-3 w-full px-4 py-3 bg-gradient-to-r from-red-950 via-red-600 to-red-950 rounded-2xl border-2 border-red-500/40 hover:border-red-400 shadow-[0_0_30px_rgba(220,38,38,0.3)] hover:shadow-[0_0_50px_rgba(220,38,38,0.5)] transition-all duration-500 hover:scale-[1.02] active:scale-95 overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 skew-x-[-20deg]"></div>
-                <div className="absolute top-0 left-0 w-full h-[45%] bg-gradient-to-b from-white/20 to-transparent pointer-events-none rounded-t-2xl"></div>
-                
-                <img src="/photo/image76.png" alt="حمودي" className="w-10 h-10 object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.4)] group-hover:scale-110 group-hover:rotate-12 transition-transform duration-500" />
-                <div className="flex flex-col items-start relative z-10">
-                  <span className="text-white font-black text-lg md:text-xl italic tracking-tighter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-                    حروف مع حمودي
-                  </span>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shadow-[0_0_10px_rgba(74,222,128,1)]"></span>
-                    <span className="text-red-100 font-bold text-[10px] uppercase tracking-[0.1em] opacity-80">لعبة حصرية</span>
-                  </div>
-                </div>
-              </button>
             </div>
 
             {/* Bottom Section */}

@@ -46,7 +46,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onChangeV
     <div className="h-screen w-screen flex bg-black overflow-hidden font-sans" dir="rtl">
 
       {/* Sidebar Container */}
-      {isAuthorized && (
+      {isAuthorized && currentView !== 'USER_DASHBOARD' && (
         <aside
           style={{ width: chatOpen ? `${sidebarWidth}px` : '0px' }}
           className="h-full transition-all duration-500 ease-in-out border-l border-white/5 flex-shrink-0 z-50 flex flex-col bg-[#050505] shadow-[20px_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden"
@@ -193,7 +193,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onChangeV
       </main>
 
       {/* Re-Open Chat Button (Visible only when chat is closed) */}
-      {isAuthorized && !chatOpen && (
+      {isAuthorized && !chatOpen && currentView !== 'USER_DASHBOARD' && (
         <button
           onClick={() => setChatOpen(true)}
           className="fixed bottom-20 left-3 z-[100] p-2.5 bg-red-600 text-white rounded-xl shadow-[0_0_30px_rgba(255,0,0,0.5)] hover:scale-110 active:scale-95 transition-all border border-white/20 animate-in slide-in-from-left-20 duration-500"

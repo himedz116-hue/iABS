@@ -27,6 +27,14 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3002,
       host: 'localhost',
+      proxy: {
+        '/kick-api': {
+          target: 'https://api.kick.com',
+          changeOrigin: true,
+          rewrite: (path: string) => path.replace(/^\/kick-api/, ''),
+          secure: true,
+        }
+      }
     },
     plugins: [react()],
     envPrefix: ['VITE_', 'EXPO_PUBLIC_'],

@@ -46,8 +46,16 @@ export const adminService = {
     if (!isConfigured) return { error: null };
     const { error } = await supabase.from('profiles').update({ is_banned: banStatus }).eq('username', username);
     if (!error) {
-      if (banStatus) await supabase.from('bans').insert([{ username, reason, banned_by: 'ADMIN_CORE' }]);
-      else await supabase.from('bans').delete().eq('username', username);
+      if (banStatus) {
+        await supabase.from('bans').insert([{ username, reason, banned_by: 'ADMIN_CORE' }]);
+        // Delete completely from leaderboard
+        await supabase.from('leaderboard').delete().eq('username', username);
+        // Reset credits to 0
+        await supabase.from('profiles').update({ credits: 0 }).eq('username', username);
+      }
+      else {
+        await supabase.from('bans').delete().eq('username', username);
+      }
       await this.logAction('SYSTEM', `BAN_${banStatus ? 'ADDED' : 'REMOVED'}`, { username, reason });
     }
     return { error };
@@ -188,68 +196,94 @@ export const leaderboardService = {
   },
   async checkIsBanned(username: string): Promise<boolean> {
     if (!isConfigured) return false;
-    const { data } = await supabase.from('profiles').select('is_banned').eq('username', username).maybeSingle();
-    return data?.is_banned || false;
+    const { data } = await supabase.from('profiles').select('is_banned').ilike('username', username).limit(1);
+    return data?.[0]?.is_banned || false;
   },
   async claimPromoCode(username: string, code: string) {
     if (!isConfigured) return { error: 'النظام غير متصل' };
+    const normalizedUser = username.toLowerCase();
+    
     const { data: promo, error: promoError } = await supabase.from('promo_codes').select('*').eq('code', code).eq('is_active', true).single();
     if (promoError || !promo) return { error: 'كود غير صالح' };
     if (promo.current_uses >= promo.max_uses) return { error: 'انتهت صلاحية الكود' };
 
-    const { data: profile } = await supabase.from('profiles').select('*').eq('username', username).maybeSingle();
+    const { data: profile } = await supabase.from('profiles').select('*').eq('username', normalizedUser).maybeSingle();
+    if (profile?.is_banned) return { error: 'حسابك محظور نهائياً ولا يمكنك استخدام الأكواد' };
+
     if (!profile) {
-      await supabase.from('profiles').insert([{ username, credits: promo.reward_amount }]);
+      await supabase.from('profiles').insert([{ username: normalizedUser, credits: promo.reward_amount }]);
     } else {
-      await supabase.from('profiles').update({ credits: (profile.credits || 0) + promo.reward_amount }).eq('username', username);
+      await supabase.from('profiles').update({ credits: (profile.credits || 0) + promo.reward_amount }).eq('username', normalizedUser);
     }
 
-    const { data: lbEntry } = await supabase.from('leaderboard').select('*').eq('username', username).maybeSingle();
+    const { data: lbEntry } = await supabase.from('leaderboard').select('*').eq('username', normalizedUser).maybeSingle();
     if (lbEntry) {
       await supabase.from('leaderboard').update({ score: (lbEntry.score || 0) + promo.reward_amount }).eq('id', lbEntry.id);
     } else {
-      await supabase.from('leaderboard').insert([{ username, score: promo.reward_amount, wins: 0 }]);
+      await supabase.from('leaderboard').insert([{ username: normalizedUser, score: promo.reward_amount, wins: 0 }]);
     }
 
     await supabase.from('promo_codes').update({ current_uses: promo.current_uses + 1 }).eq('id', promo.id);
-    await adminService.logAction('SYSTEM_AUTO', 'PROMO_REDEEM', { username, code, amount: promo.reward_amount });
+    await adminService.logAction('SYSTEM_AUTO', 'PROMO_REDEEM', { username: normalizedUser, code, amount: promo.reward_amount });
     return { success: true, amount: promo.reward_amount };
   },
   async recordWin(username: string, avatarUrl: string, points: number = 10) {
     if (!isConfigured || !username || username === 'Unknown') return;
-    const { data: profile } = await supabase.from('profiles').select('*').ilike('username', username).maybeSingle();
+    const normalizedUser = username.toLowerCase();
+    
+    const { data: profiles } = await supabase.from('profiles').select('*').ilike('username', normalizedUser).limit(1);
+    const profile = profiles?.[0];
+
     if (!profile) {
-      await supabase.from('profiles').insert([{ username, avatar_url: avatarUrl }]);
+      await supabase.from('profiles').insert([{ username: normalizedUser, avatar_url: avatarUrl }]);
     } else if (profile.is_banned) return;
 
-    // Use upsert to avoid race conditions and duplicate key errors
-    const { data: existing } = await supabase.from('leaderboard').select('*').ilike('username', username).maybeSingle();
+    const { data: existingRows } = await supabase.from('leaderboard').select('*').ilike('username', normalizedUser).limit(1);
+    const existing = existingRows?.[0];
 
-    await supabase.from('leaderboard').upsert({
-      username: existing?.username || username,
-      wins: (existing?.wins || 0) + 1,
-      score: (existing?.score || 0) + points,
-      last_win_at: new Date().toISOString()
-    }, { onConflict: 'username' });
+    if (existing) {
+      await supabase.from('leaderboard').update({
+        wins: (existing.wins || 0) + 1,
+        score: (existing.score || 0) + points,
+        last_win_at: new Date().toISOString()
+      }).eq('id', existing.id);
+    } else {
+      // Use upsert to be completely safe against race conditions during insert
+      await supabase.from('leaderboard').upsert([{
+        username: normalizedUser,
+        wins: 1,
+        score: points,
+        last_win_at: new Date().toISOString()
+      }], { onConflict: 'username' });
+    }
   },
   async adjustPlayerStats(username: string, scoreDelta: number, winsDelta: number) {
     if (!isConfigured) return { error: null };
+    const normalizedUser = username.toLowerCase();
 
-    // First get existing to calculate deltas correctly (if we want to cap at 0)
-    const { data: existing } = await supabase.from('leaderboard').select('*').ilike('username', username).maybeSingle();
+    const { data: existingRows } = await supabase.from('leaderboard').select('*').ilike('username', normalizedUser).limit(1);
+    const existing = existingRows?.[0];
 
     const finalScore = Math.max(0, (existing?.score || 0) + scoreDelta);
     const finalWins = Math.max(0, (existing?.wins || 0) + winsDelta);
 
-    const res = await supabase.from('leaderboard').upsert({
-      username: existing?.username || username,
-      score: finalScore,
-      wins: finalWins
-    }, { onConflict: 'username' }).select().single();
+    let res;
+    if (existing) {
+      res = await supabase.from('leaderboard').update({
+        score: finalScore,
+        wins: finalWins
+      }).eq('id', existing.id).select().single();
+    } else {
+      res = await supabase.from('leaderboard').upsert([{
+        username: normalizedUser,
+        score: finalScore,
+        wins: finalWins
+      }], { onConflict: 'username' }).select().single();
+    }
 
     if (!res.error) {
       await adminService.logAction('CORE_ADMIN', 'STATS_ADJUST', {
-        username,
+        username: normalizedUser,
         scoreDelta,
         winsDelta,
         finalScore,
