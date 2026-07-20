@@ -33,7 +33,7 @@ import { GlobalAnnouncement } from './components/GlobalAnnouncement';
 import { ViewState } from './types';
 import { GlobalPasswordPage } from './components/GlobalPasswordPage';
 import { UserDashboard } from './components/UserDashboard';
-import { UserAuthPage } from './components/UserAuthPage';
+import { HostLoginPage } from './components/HostLoginPage';
 import {
   Trophy, Play, Lock, User, Swords, Image as ImageIcon,
   RotateCw, Gift, Flag, Users2, Keyboard, Gem, Coffee,
@@ -463,15 +463,14 @@ const App: React.FC = () => {
       case 'BUZZER_PAD': return <BuzzerPad />;
 
       case 'HOST_LOGIN': return (
-        <div className="flex-1 w-full max-w-2xl mx-auto flex flex-col items-center justify-center p-4 md:p-8 animate-in fade-in zoom-in duration-500">
-          <UserAuthPage
-            onSuccess={(userData) => {
+        <div className="flex-1 w-full flex items-center justify-center p-4 md:p-8">
+          <HostLoginPage
+            onSuccess={(hostData) => {
               localStorage.setItem('iabs_user', JSON.stringify({
                 id: '',
-                display_name: userData.name,
-                kick_username: userData.kickUsername,
-                discord: userData.discord || '',
-                avatar: userData.avatar || ''
+                display_name: hostData.name,
+                kick_username: hostData.kickUsername,
+                avatar: hostData.avatar || ''
               }));
               localStorage.setItem('site_access_granted', JSON.stringify({ valid: true, role: 'user' }));
               setUserRole('user');
