@@ -31,6 +31,26 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ userData, onLogout
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isBanned, setIsBanned] = useState(false);
     const [banReason, setBanReason] = useState('');
+    const [isAdmin, setIsAdmin] = useState(false);
+
+    useEffect(() => {
+        try {
+            const adminAuth = localStorage.getItem('admin_access_granted');
+            if (adminAuth) {
+                const parsed = JSON.parse(adminAuth);
+                if (parsed.valid) setIsAdmin(true);
+            }
+        } catch (e) {}
+    }, []);
+
+    const handleReturnToAdmin = () => {
+        const adminAuth = localStorage.getItem('admin_access_granted');
+        if (adminAuth) {
+            localStorage.setItem('site_access_granted', adminAuth);
+            localStorage.removeItem('iabs_user');
+            window.location.reload();
+        }
+    };
 
     // Sidebar items
     const navItems = [
@@ -132,6 +152,17 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ userData, onLogout
     // Shared sidebar content used in both desktop and mobile
     const SidebarContent = () => (
         <>
+            {isAdmin && (
+                <button
+                    onClick={handleReturnToAdmin}
+                    className="mb-4 w-full relative group py-3 px-4 bg-gradient-to-r from-blue-600/20 to-blue-800/10 hover:from-blue-500/30 hover:to-blue-700/20 rounded-[1rem] border border-blue-500/30 transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(59,130,246,0.15)] hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] active:scale-95"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400/0 via-blue-400/10 to-blue-400/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 skew-x-[-20deg]" />
+                    <ShieldAlert size={16} className="text-blue-400 group-hover:scale-110 transition-transform" />
+                    <span className="text-blue-300 font-black text-sm tracking-tight drop-shadow-md">الرجوع للإدارة</span>
+                </button>
+            )}
+
             {/* Profile Card */}
             <div className="relative p-5 rounded-[1.5rem] bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/10 overflow-hidden group">
                 {/* Animated glow behind avatar */}
