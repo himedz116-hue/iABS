@@ -26,6 +26,9 @@ export interface MahmahQuestion {
   points: number;
   text: string;
   answer: string;
+  media_url?: string;
+  media_type?: 'image' | 'video' | 'audio';
+  answer_image_url?: string;
 }
 
 interface Team {
@@ -539,7 +542,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
             </div>
             
             <div className="flex-1 mt-6 overflow-y-auto">
-               {Object.values(chatPlayers)
+               {(Object.values(chatPlayers) as ChatPlayer[])
                 .sort((a, b) => b.score - a.score)
                 .slice(0, 3)
                 .map((p, i) => (
@@ -628,10 +631,39 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
               <span className={`absolute inset-0 flex items-center justify-center text-5xl font-black z-10 ${timer <= 10 ? 'text-red-500 animate-pulse drop-shadow-[0_0_15px_rgba(239,68,68,0.8)]' : 'text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]'}`}>{timer}</span>
             </div>
 
+            {/* Question Media */}
+            {currentQ.media_url && (
+              <div className="mb-6 w-full flex justify-center" style={{ animation: 'fadeIn 0.5s ease-out' }}>
+                {currentQ.media_type === 'image' && (
+                  <div className="relative max-w-lg w-full group">
+                    <div className="absolute -inset-2 bg-gradient-to-r from-red-500/20 via-yellow-500/20 to-red-500/20 blur-xl rounded-3xl opacity-60 group-hover:opacity-100 transition-opacity" />
+                    <img src={currentQ.media_url} alt="" className="relative z-10 w-full max-h-[300px] object-contain rounded-2xl border-2 border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.6)]" />
+                  </div>
+                )}
+                {currentQ.media_type === 'video' && (
+                  <div className="relative max-w-xl w-full group">
+                    <div className="absolute -inset-2 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-purple-500/20 blur-xl rounded-3xl opacity-60" />
+                    <video src={currentQ.media_url} controls autoPlay className="relative z-10 w-full max-h-[300px] rounded-2xl border-2 border-purple-500/30 shadow-[0_20px_60px_rgba(0,0,0,0.6)]" />
+                  </div>
+                )}
+                {currentQ.media_type === 'audio' && (
+                  <div className="relative w-full max-w-lg group">
+                    <div className="absolute -inset-2 bg-gradient-to-r from-pink-500/10 via-indigo-500/10 to-pink-500/10 blur-xl rounded-3xl opacity-60" />
+                    <div className="relative z-10 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex flex-col items-center gap-4 shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
+                      <div className="flex items-center gap-3 text-pink-400 font-black text-lg"><span className="text-3xl">🎵</span> استمع وجاوب!</div>
+                      <audio src={currentQ.media_url} controls autoPlay className="w-full" style={{ filter: 'hue-rotate(300deg)' }} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Question Text */}
-            <h2 className={`font-black text-white leading-tight mb-16 w-full px-4 md:px-10 ${mode === 'chat' ? 'text-4xl md:text-5xl lg:text-6xl' : 'text-5xl md:text-6xl lg:text-7xl'}`} style={{ textShadow: '0 10px 40px rgba(0,0,0,0.8), 0 0 20px rgba(255,255,255,0.2)' }}>
-              {currentQ.text}
-            </h2>
+            {currentQ.text && (
+              <h2 className={`font-black text-white leading-tight mb-10 w-full px-4 md:px-10 ${currentQ.media_url ? 'text-3xl md:text-4xl lg:text-5xl' : (mode === 'chat' ? 'text-4xl md:text-5xl lg:text-6xl' : 'text-5xl md:text-6xl lg:text-7xl')}`} style={{ textShadow: '0 10px 40px rgba(0,0,0,0.8), 0 0 20px rgba(255,255,255,0.2)' }}>
+                {currentQ.text}
+              </h2>
+            )}
 
             {/* Winner / Answer Display */}
             {mode === 'chat' ? (
@@ -654,6 +686,12 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
                     <div className="text-red-400 font-black text-2xl mb-6 drop-shadow-[0_0_15px_rgba(239,68,68,0.8)] flex items-center gap-3">
                       <X size={32} /> انتهى الوقت ولم يجب أحد!
                     </div>
+                    {currentQ.answer_image_url && (
+                      <div className="relative mb-4 group">
+                        <div className="absolute -inset-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 blur-xl rounded-3xl opacity-80" />
+                        <img src={currentQ.answer_image_url} alt="" className="relative z-10 max-h-[200px] rounded-2xl border-2 border-green-500/30 shadow-[0_10px_40px_rgba(0,0,0,0.5)] object-contain" />
+                      </div>
+                    )}
                     <div className="flex items-center gap-6 bg-white/5 border border-white/10 rounded-3xl px-12 py-6 shadow-inner">
                       <span className="text-white/50 font-bold text-2xl">الإجابة الصحيحة:</span>
                       <div className="text-white font-black text-5xl drop-shadow-[0_0_20px_rgba(255,255,255,0.6)] text-green-400">{currentQ.answer}</div>
@@ -700,8 +738,14 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
             ) : (
               <>
                 {showAnswer && (
-                  <div className="mb-12" style={{ animation: 'zoomBounce 0.5s ease-out' }}>
-                    <div className="text-white/40 text-sm font-bold mb-3">الإجابة الصحيحة:</div>
+                  <div className="mb-12 flex flex-col items-center" style={{ animation: 'zoomBounce 0.5s ease-out' }}>
+                    <div className="text-white/40 text-sm font-bold mb-4">الإجابة الصحيحة:</div>
+                    {currentQ.answer_image_url && (
+                      <div className="relative mb-6 group">
+                        <div className="absolute -inset-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 blur-xl rounded-3xl opacity-80" />
+                        <img src={currentQ.answer_image_url} alt="" className="relative z-10 max-h-[300px] rounded-2xl border-2 border-green-500/30 shadow-[0_10px_40px_rgba(0,0,0,0.5)] object-contain" />
+                      </div>
+                    )}
                     <div className="text-5xl font-black text-green-400" style={{ textShadow: '0 0 40px rgba(74,222,128,0.4)' }}>{currentQ.answer}</div>
                   </div>
                 )}
