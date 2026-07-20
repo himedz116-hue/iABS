@@ -466,6 +466,11 @@ const App: React.FC = () => {
         <div className="flex-1 w-full flex items-center justify-center p-4 md:p-8">
           <HostLoginPage
             onSuccess={(hostData) => {
+              if (userRole === 'admin') {
+                const siteAuth = localStorage.getItem('site_access_granted');
+                if (siteAuth) localStorage.setItem('admin_access_granted', siteAuth);
+              }
+              
               localStorage.setItem('iabs_user', JSON.stringify({
                 id: '',
                 display_name: hostData.name,
