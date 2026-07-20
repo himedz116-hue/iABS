@@ -52,16 +52,27 @@ export const HostLoginPage: React.FC<HostLoginPageProps> = ({ onSuccess, onBack 
       }
 
       // Fetch points from leaderboard
-      const { data: lbData } = await supabase
+      const { data: lbData, error: lbError } = await supabase
         .from('leaderboard')
-        .select('score, wins, avatar_url')
+        .select('score, wins')
         .ilike('username', username)
         .order('score', { ascending: false })
         .limit(1);
 
+      if (lbError) {
+        console.error('[HostLogin] Leaderboard error:', lbError);
+      }
+
+      // Fetch profile for fallback avatar
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('avatar_url')
+        .ilike('username', username)
+        .limit(1);
+
       const userPoints = lbData?.[0]?.score || 0;
       const userWins = lbData?.[0]?.wins || 0;
-      const lbAvatar = lbData?.[0]?.avatar_url || '';
+      const lbAvatar = profileData?.[0]?.avatar_url || '';
 
       setPoints(userPoints);
       setWins(userWins);
