@@ -164,39 +164,38 @@ export const HigherLowerGame: React.FC<HigherLowerGameProps> = ({ onHome, isOBS 
     // Render Stage Select
     if (gameState === 'stage_select') {
         return (
-            <div className="fixed inset-0 z-50 bg-[#050505] flex flex-row font-sans overflow-hidden" dir="rtl">
+            <div className="fixed inset-0 z-50 bg-[#050505] flex flex-col font-sans overflow-hidden" dir="rtl">
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none" />
                 
-                {/* Side Panel - Controls */}
-                <div className="relative z-10 w-72 shrink-0 bg-gradient-to-b from-purple-950/30 via-black/80 to-black/80 border-l border-white/10 flex flex-col items-center justify-between p-6">
-                    <div className="flex flex-col items-center gap-6 w-full">
-                        <IabsLogo size="md" />
-                        <h1 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 italic tracking-tighter drop-shadow-lg text-center">
+                {/* Compact Header */}
+                <div className="relative z-10 flex items-center justify-between px-6 py-3 bg-gradient-to-l from-purple-950/40 via-black/80 to-black/80 border-b border-white/10 shrink-0">
+                    <div className="flex items-center gap-4">
+                        <button onClick={onHome} className="p-2.5 bg-white/5 hover:bg-red-500/20 rounded-xl border border-white/10 hover:border-red-500/30 transition-all text-white active:scale-90">
+                            <Home size={18} />
+                        </button>
+                        <div className="h-6 w-px bg-white/10" />
+                        <h1 className="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 italic tracking-tighter">
                             أعلى أم أقل 📈📉
                         </h1>
-                        <div className="h-px w-full bg-gradient-to-r from-transparent via-purple-500/40 to-transparent" />
-                        <p className="text-white/50 text-sm font-bold text-center leading-relaxed">
-                            اختر مرحلة للبدء!<br/>30 مرحلة × 20 سؤال
-                        </p>
                     </div>
-                    
-                    <button onClick={onHome} className="w-full p-4 bg-white/5 hover:bg-red-500/20 rounded-2xl border border-white/10 hover:border-red-500/30 transition-all text-white flex items-center justify-center gap-3 font-black">
-                        <Home size={20} /> العودة للرئيسية
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <span className="text-white/40 text-xs font-bold">30 مرحلة × 20 سؤال</span>
+                        <IabsLogo size="sm" />
+                    </div>
                 </div>
 
                 {/* Main Grid Area */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10 z-10">
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 z-10">
+                    <div className="max-w-6xl mx-auto grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4">
                         {stages.map(stage => (
                             <button
                                 key={stage}
                                 onClick={() => handleStageSelect(stage)}
-                                className="relative group overflow-hidden rounded-2xl aspect-square bg-white/5 border border-white/10 hover:border-purple-500/50 transition-all hover:scale-105 active:scale-95 flex flex-col items-center justify-center gap-3"
+                                className="relative group overflow-hidden rounded-2xl aspect-square bg-white/5 border border-white/10 hover:border-purple-500/50 transition-all hover:scale-105 active:scale-95 flex flex-col items-center justify-center gap-2"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                <Trophy className="text-purple-400 w-10 h-10 group-hover:scale-110 transition-transform" />
-                                <span className="text-white font-black text-xl italic drop-shadow-md">مرحلة {stage}</span>
+                                <Trophy className="text-purple-400 w-8 h-8 md:w-10 md:h-10 group-hover:scale-110 transition-transform" />
+                                <span className="text-white font-black text-base md:text-lg italic drop-shadow-md">مرحلة {stage}</span>
                             </button>
                         ))}
                     </div>
