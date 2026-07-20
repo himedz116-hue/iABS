@@ -20,6 +20,7 @@ export type Language = 'ar' | 'en';
 
 export type ViewState =
   | 'HOME'
+  | 'HOST_LOGIN'
   | 'USER_DASHBOARD'
   | 'FAWAZIR_SELECT'
   | 'FAWAZIR_GAME'

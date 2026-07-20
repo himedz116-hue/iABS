@@ -33,6 +33,7 @@ import { GlobalAnnouncement } from './components/GlobalAnnouncement';
 import { ViewState } from './types';
 import { GlobalPasswordPage } from './components/GlobalPasswordPage';
 import { UserDashboard } from './components/UserDashboard';
+import { UserAuthPage } from './components/UserAuthPage';
 import {
   Trophy, Play, Lock, User, Swords, Image as ImageIcon,
   RotateCw, Gift, Flag, Users2, Keyboard, Gem, Coffee,
@@ -461,6 +462,27 @@ const App: React.FC = () => {
       case 'LETTER_GAME': return <LetterHexagonGame onHome={handleGoHome} isOBS={obsMode} onToggleOBSPreview={() => setShowObsPreview(!showObsPreview)} obsPreviewActive={showObsPreview} />;
       case 'BUZZER_PAD': return <BuzzerPad />;
 
+      case 'HOST_LOGIN': return (
+        <div className="flex-1 w-full max-w-2xl mx-auto flex flex-col items-center justify-center p-4 md:p-8 animate-in fade-in zoom-in duration-500">
+          <UserAuthPage
+            onSuccess={(userData) => {
+              localStorage.setItem('iabs_user', JSON.stringify({
+                id: '',
+                display_name: userData.name,
+                kick_username: userData.kickUsername,
+                discord: userData.discord || '',
+                avatar: userData.avatar || ''
+              }));
+              localStorage.setItem('site_access_granted', JSON.stringify({ valid: true, role: 'user' }));
+              setUserRole('user');
+              setIsAuthorized(true);
+              setCurrentView('USER_DASHBOARD');
+            }}
+            onBack={() => setCurrentView('HOME')}
+          />
+        </div>
+      );
+
       case 'USER_DASHBOARD': return (
         <div className="flex-1 w-full max-w-7xl mx-auto flex flex-col p-2 md:p-6 animate-in slide-in-from-bottom-20 duration-1000">
           <UserDashboard
@@ -819,6 +841,19 @@ const App: React.FC = () => {
                   </div>
                 </button>
               )}
+
+              {/* Host Login Button */}
+              <button onClick={() => setCurrentView('HOST_LOGIN')}
+                className="group relative flex items-center gap-4 px-8 py-4 bg-gradient-to-b from-emerald-600/20 to-emerald-700/10 border border-emerald-500/20 hover:border-emerald-400/50 rounded-2xl transition-all duration-500 hover:scale-105 active:scale-95 overflow-hidden"
+                style={{transform:'rotateX(2deg) translateZ(15px)', transformStyle:'preserve-3d', perspective:'500px'}}>
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 skew-x-[-20deg]"></div>
+                <div className="absolute -inset-2 bg-emerald-500/10 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                <User size={28} className="text-emerald-500 group-hover:scale-110 transition-transform drop-shadow-[0_0_15px_rgba(16,185,129,0.6)]" />
+                <div className="flex flex-col items-start">
+                  <span className="text-white font-black text-base tracking-wider">دخول المستضيف</span>
+                  <span className="text-emerald-500/50 font-bold text-[9px] uppercase tracking-[0.3em]">Host Login</span>
+                </div>
+              </button>
 
               {/* Leaderboard nav */}
               {userRole !== 'admin' && (
