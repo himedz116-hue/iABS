@@ -185,17 +185,17 @@ export const HigherLowerGame: React.FC<HigherLowerGameProps> = ({ onHome, isOBS 
                 </div>
 
                 {/* Main Grid Area */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 z-10">
-                    <div className="max-w-6xl mx-auto grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-3 md:p-5 z-10 flex items-start justify-center">
+                    <div className="w-full max-w-4xl grid grid-cols-5 md:grid-cols-6 lg:grid-cols-10 gap-2 md:gap-3">
                         {stages.map(stage => (
                             <button
                                 key={stage}
                                 onClick={() => handleStageSelect(stage)}
-                                className="relative group overflow-hidden rounded-2xl aspect-square bg-white/5 border border-white/10 hover:border-purple-500/50 transition-all hover:scale-105 active:scale-95 flex flex-col items-center justify-center gap-2"
+                                className="relative group overflow-hidden rounded-xl bg-white/5 border border-white/10 hover:border-purple-500/50 transition-all hover:scale-105 active:scale-95 flex flex-col items-center justify-center gap-1 py-4 px-2"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                <Trophy className="text-purple-400 w-8 h-8 md:w-10 md:h-10 group-hover:scale-110 transition-transform" />
-                                <span className="text-white font-black text-base md:text-lg italic drop-shadow-md">مرحلة {stage}</span>
+                                <Trophy className="text-purple-400 w-6 h-6 group-hover:scale-110 transition-transform" />
+                                <span className="text-white font-black text-xs italic drop-shadow-md">{stage}</span>
                             </button>
                         ))}
                     </div>
