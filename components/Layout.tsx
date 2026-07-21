@@ -40,7 +40,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onChangeV
     });
   };
 
-  const isHome = currentView === 'HOME' || (currentView as string) === 'ADMIN_LOGIN';
+  const isHome = currentView === 'HOME' || (currentView as string) === 'ADMIN_LOGIN' || currentView === 'ABOUT';
 
   return (
     <div className="h-screen w-screen flex bg-black overflow-hidden font-sans" dir="rtl">

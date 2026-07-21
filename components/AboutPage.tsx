@@ -264,13 +264,13 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#030303] text-white overflow-x-hidden" dir="rtl">
+    <div className="min-h-screen bg-transparent text-white w-full overflow-x-hidden relative" dir="rtl">
       {/* Floating Particles Background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         {Array.from({ length: 30 }).map((_, i) => (
           <div
             key={i}
-            className="absolute w-1 h-1 bg-red-500/30 rounded-full animate-pulse"
+            className="absolute w-1 h-1 bg-red-500/40 rounded-full animate-pulse"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
@@ -284,20 +284,21 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
       {/* ============ HERO SECTION ============ */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-4 overflow-hidden">
         {/* Giant glow orbs */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-red-600/10 blur-[200px] rounded-full" />
-        <div className="absolute top-1/3 right-0 w-[300px] h-[300px] bg-purple-600/10 blur-[150px] rounded-full" />
-        <div className="absolute bottom-1/4 left-0 w-[300px] h-[300px] bg-blue-600/8 blur-[150px] rounded-full" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-red-600/15 blur-[220px] rounded-full" />
+        <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-purple-600/15 blur-[180px] rounded-full" />
+        <div className="absolute bottom-1/4 left-0 w-[400px] h-[400px] bg-amber-600/10 blur-[180px] rounded-full" />
 
-        {/* Grid pattern */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
 
-        {/* Back button */}
+        {/* Top Navbar Action */}
         <button
           onClick={onBack}
-          className="fixed top-6 right-6 z-50 px-5 py-2.5 bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10 hover:border-white/30 rounded-2xl text-white font-bold text-sm transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+          className="fixed top-6 right-6 z-50 px-6 py-3 bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 backdrop-blur-xl border border-red-500/40 rounded-2xl text-white font-black text-sm transition-all hover:scale-105 active:scale-95 flex items-center gap-2.5 shadow-[0_0_25px_rgba(239,68,68,0.5)]"
         >
-          <ChevronRight size={16} />
-          العودة
+          <Gamepad2 size={18} />
+          <span>دخول الساحة الرئيسية</span>
+          <ChevronRight size={16} className="rotate-180" />
         </button>
 
         <div className="relative z-10 text-center max-w-5xl mx-auto">
@@ -336,39 +337,40 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-4 mb-16">
+          <div className="flex flex-wrap items-center justify-center gap-5 mb-16">
+            <button
+              onClick={onBack}
+              className="group relative px-10 py-5 bg-gradient-to-r from-red-600 via-red-700 to-rose-700 rounded-2xl font-black text-xl text-white hover:scale-105 active:scale-95 transition-all shadow-[0_0_50px_rgba(239,68,68,0.5)] overflow-hidden flex items-center gap-3 border border-red-400/40"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 skew-x-[-20deg]" />
+              <Gamepad2 size={26} className="relative z-10 animate-bounce" />
+              <span className="relative z-10">دخول ساحة الألعاب الرئيسية</span>
+            </button>
             <a
               href="https://kick.com/iabs"
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative px-10 py-5 bg-gradient-to-r from-green-600 to-green-700 rounded-2xl font-black text-xl text-white hover:scale-105 active:scale-95 transition-all shadow-[0_0_40px_rgba(22,163,74,0.4)] overflow-hidden flex items-center gap-3"
+              className="group relative px-9 py-5 bg-black/40 backdrop-blur-xl border border-green-500/30 hover:border-green-400/60 rounded-2xl font-black text-xl text-white hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(34,197,94,0.2)] overflow-hidden flex items-center gap-3"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-green-400/0 via-green-400/20 to-green-400/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 skew-x-[-20deg]" />
-              <Play size={24} className="relative z-10" />
-              <span className="relative z-10">شاهد البث على Kick</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-green-400/0 via-green-400/10 to-green-400/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 skew-x-[-20deg]" />
+              <Play size={24} className="relative z-10 text-green-400" />
+              <span className="relative z-10 text-green-400">شاهد البث على Kick</span>
             </a>
-            <button
-              onClick={onBack}
-              className="px-10 py-5 bg-white/5 border border-white/10 hover:border-red-500/50 rounded-2xl font-black text-xl text-white/80 hover:text-white hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
-            >
-              <Gamepad2 size={24} />
-              ادخل الساحة
-            </button>
           </div>
 
           {/* Stats Bar */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
             {STATS.map((stat, i) => (
               <div
                 key={i}
-                className="bg-white/[0.03] border border-white/5 rounded-2xl p-5 text-center hover:bg-white/[0.06] transition-all group"
+                className="glass-card bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 text-center hover:bg-black/60 hover:border-red-500/30 transition-all group shadow-xl"
               >
                 <stat.icon
-                  size={28}
-                  className="text-red-500 mx-auto mb-3 group-hover:scale-110 transition-transform"
+                  size={32}
+                  className="text-red-500 mx-auto mb-3 group-hover:scale-110 transition-transform drop-shadow-[0_0_12px_rgba(239,68,68,0.5)]"
                 />
-                <div className="text-3xl font-black text-white mb-1">{stat.value}</div>
-                <div className="text-xs text-white/40 font-bold uppercase tracking-widest">
+                <div className="text-3xl font-black text-white mb-1 font-mono tracking-tight">{stat.value}</div>
+                <div className="text-xs text-white/50 font-bold uppercase tracking-widest">
                   {stat.label}
                 </div>
               </div>

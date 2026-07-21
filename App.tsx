@@ -61,18 +61,18 @@ const ICON_MAP: Record<string, any> = {
 const App: React.FC = () => {
   // Initialize from URL params to prevent flicker
   const getInitialParams = () => {
-    if (typeof window === 'undefined') return { obs: false, view: 'HOME' as ViewState };
+    if (typeof window === 'undefined') return { obs: false, view: 'ABOUT' as ViewState };
     const params = new URLSearchParams(window.location.search);
     const studioToken = !!(process.env.OBS_STUDIO_TOKEN && params.get('t') === process.env.OBS_STUDIO_TOKEN);
     return {
       obs: params.get('obs') === 'true' || studioToken,
-      view: studioToken ? 'DRAWING_CHALLENGE' : (params.get('view') as ViewState) || 'HOME'
+      view: studioToken ? 'DRAWING_CHALLENGE' : (params.get('view') as ViewState) || 'ABOUT'
     };
   };
 
   const initialParams = getInitialParams();
   const [currentView, setCurrentView] = useState<ViewState | 'ADMIN_LOGIN' | 'ADMIN_PANEL'>(() => {
-    if (initialParams.view !== 'HOME') return initialParams.view;
+    if (initialParams.view !== 'ABOUT' && initialParams.view !== 'HOME') return initialParams.view;
     try {
       const stored = localStorage.getItem('site_access_granted');
       if (stored) {
