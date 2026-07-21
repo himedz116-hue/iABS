@@ -572,54 +572,51 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
     const activeTeam = teams[activeTeamIdx];
 
     return (
-      <div className="fixed inset-0 z-50 flex flex-col bg-gradient-to-br from-black via-zinc-900 to-black pr-[380px]" style={{ animation: 'fadeIn 0.3s ease-out' }}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black pr-[380px]" style={{ animation: 'fadeIn 0.3s ease-out' }}>
         
-        {/* Background Ambient Effects */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-500/10 blur-[200px] rounded-full animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 blur-[200px] rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-500/5 blur-[300px] rounded-full" />
+        {/* Background Ambient */}
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+          <div className="w-[600px] h-[600px] bg-red-600/10 blur-[150px] rounded-full animate-pulse" />
         </div>
 
-        {/* Header */}
-        <div className="relative z-50 flex items-center justify-between px-8 py-6 border-b border-white/5 bg-black/20 backdrop-blur-xl">
-          <button onClick={closeQuestion} className="w-12 h-12 bg-white/5 hover:bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center text-white transition-all hover:scale-110 shadow-lg border border-white/10">
-            <X size={24} />
-          </button>
-          <div className="flex items-center gap-4">
-            <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 text-yellow-400 font-black text-xl px-6 py-2 rounded-2xl shadow-[0_0_30px_rgba(234,179,8,0.2)] backdrop-blur-md">
-              {currentQ.points} نقطة
-            </div>
-            {/* Timer */}
-            <div className="relative w-16 h-16">
-              <div className="absolute inset-0 bg-yellow-500/10 blur-[20px] rounded-full animate-pulse" />
-              <svg className="w-full h-full -rotate-90 relative z-10" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="45" fill="rgba(0,0,0,0.5)" stroke="rgba(255,255,255,0.1)" strokeWidth="5" />
-                <circle cx="50" cy="50" r="45" fill="none" stroke={timer <= 10 ? '#EF4444' : '#EAB308'} strokeWidth="5" strokeLinecap="round"
-                  strokeDasharray={`${timerPercent * 2.83} 283`} style={{ transition: 'stroke-dasharray 1s linear', filter: 'drop-shadow(0 0 10px rgba(234,179,8,0.5))' }} />
-              </svg>
-              <span className={`absolute inset-0 flex items-center justify-center text-2xl font-black z-10 ${timer <= 10 ? 'text-red-500 animate-pulse drop-shadow-[0_0_15px_rgba(239,68,68,0.8)]' : 'text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]'}`}>{timer}</span>
-            </div>
+        {/* Close Button */}
+        <button onClick={closeQuestion} className="absolute top-8 left-8 z-50 w-12 h-12 bg-red-600/20 hover:bg-red-600/40 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-all hover:scale-110 shadow-[0_0_20px_rgba(220,38,38,0.3)] border border-red-500/30">
+          <X size={24} />
+        </button>
+
+        {/* Points and Timer */}
+        <div className="absolute top-8 right-8 z-50 flex items-center gap-4">
+          <div className="bg-red-600/20 border border-red-500/40 text-red-400 font-black text-xl px-6 py-2 rounded-full shadow-[0_0_30px_rgba(220,38,38,0.3)] backdrop-blur-md">
+            {currentQ.points} نقطة
+          </div>
+          <div className="relative w-16 h-16">
+            <div className="absolute inset-0 bg-red-500/20 blur-[20px] rounded-full animate-pulse" />
+            <svg className="w-full h-full -rotate-90 relative z-10" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="45" fill="rgba(0,0,0,0.5)" stroke="rgba(255,255,255,0.1)" strokeWidth="5" />
+              <circle cx="50" cy="50" r="45" fill="none" stroke={timer <= 10 ? '#EF4444' : '#DC2626'} strokeWidth="5" strokeLinecap="round"
+                strokeDasharray={`${timerPercent * 2.83} 283`} style={{ transition: 'stroke-dasharray 1s linear', filter: 'drop-shadow(0 0 10px rgba(220,38,38,0.5))' }} />
+            </svg>
+            <span className={`absolute inset-0 flex items-center justify-center text-2xl font-black z-10 ${timer <= 10 ? 'text-red-500 animate-pulse drop-shadow-[0_0_15px_rgba(239,68,68,0.8)]' : 'text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]'}`}>{timer}</span>
           </div>
         </div>
 
         {/* Friends Helpers */}
         {mode === 'friends' && (
-          <div className="absolute top-24 right-8 flex gap-2 z-20" style={{ right: 'auto', left: '80px' }}>
+          <div className="absolute top-24 right-8 flex gap-2 z-20">
             <button onClick={() => setFMultiplier(2)} disabled={showAnswer || fMultiplier === 2}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl font-black text-xs transition-all ${fMultiplier === 2 ? 'bg-yellow-500 text-black shadow-[0_0_15px_rgba(234,179,8,0.5)]' : 'bg-white/10 text-white hover:bg-white/20 border border-white/10'}`}>
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl font-black text-xs transition-all border ${fMultiplier === 2 ? 'bg-yellow-500 text-black border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.5)]' : 'bg-red-600/20 text-red-400 border-red-500/30 hover:bg-red-600/30'}`}>
               <FastForward size={14} /> دبل x2
             </button>
             <button onClick={() => setFBlocked(true)} disabled={showAnswer || fBlocked}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl font-black text-xs transition-all ${fBlocked ? 'bg-red-500 text-white' : 'bg-white/10 text-white hover:bg-white/20 border border-white/10'}`}>
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl font-black text-xs transition-all border ${fBlocked ? 'bg-red-500 text-white border-red-500' : 'bg-red-600/20 text-red-400 border-red-500/30 hover:bg-red-600/30'}`}>
               <Shield size={14} /> منع
             </button>
             <button onClick={() => setFStolen(true)} disabled={showAnswer || fStolen || fBlocked}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl font-black text-xs transition-all ${fStolen ? 'bg-purple-500 text-white' : 'bg-white/10 text-white hover:bg-white/20 border border-white/10'}`}>
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl font-black text-xs transition-all border ${fStolen ? 'bg-red-500 text-white border-red-500' : 'bg-red-600/20 text-red-400 border-red-500/30 hover:bg-red-600/30'}`}>
               <Volume2 size={14} /> سرقة
             </button>
             <button onClick={() => setShowWheel(true)} disabled={showAnswer}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl font-black text-xs bg-gradient-to-r from-pink-500 to-orange-500 text-white hover:scale-105 transition-all shadow-lg">
+              className="flex items-center gap-2 px-3 py-2 rounded-xl font-black text-xs bg-gradient-to-r from-red-500 to-orange-500 text-white hover:scale-105 transition-all shadow-lg border border-red-500/30">
               <Star size={14} /> العجلة
             </button>
           </div>
@@ -627,117 +624,39 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
 
         {/* Team Info for Friends Mode */}
         {mode === 'friends' && (
-          <div className="relative z-10 px-8 pt-4">
-            <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-lg ${activeTeam.color}`}>
-              {fStolen ? <span className="text-purple-400 animate-pulse font-black">🔊 سؤال مسروق!</span> : <span className="font-black text-white">دور: {activeTeam.name}</span>}
+          <div className="absolute top-24 right-8 mt-14 z-20">
+            <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-2xl border border-red-500/30 bg-red-600/20 backdrop-blur-xl shadow-lg ${activeTeam.color}`}>
+              {fStolen ? <span className="text-red-400 animate-pulse font-black">🔊 سؤال مسروق!</span> : <span className="font-black text-white">دور: {activeTeam.name}</span>}
             </div>
           </div>
         )}
 
-        {/* Main Content - Full Screen Layout */}
-        <div className="flex-1 flex gap-8 p-8 relative z-10">
+        {/* Main Content - Centered Layout */}
+        <div className="w-full max-w-5xl flex flex-col items-center justify-center gap-8 relative z-10 px-8">
           
-          {/* Left Side: Answer Display */}
-          <div className="flex-1 flex flex-col items-center justify-center bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-6 shadow-2xl">
-            {mode === 'chat' ? (
-              chatWinner ? (
-                <div className="flex flex-col items-center gap-4 w-full" style={{ animation: 'zoomBounce 0.5s ease-out' }}>
-                  <div className="text-green-400 font-black text-2xl mb-2">🎉 الفائز!</div>
-                  <div className="flex items-center gap-4">
-                    <ProAvatar url={chatWinner.avatar} username={chatWinner.username} size="w-20 h-20" className="overflow-visible shadow-[0_0_40px_rgba(34,197,94,0.8)]" />
-                    <div className="text-white font-black text-4xl">{chatWinner.username}</div>
-                  </div>
-                  <div className="text-green-400 font-black text-3xl bg-green-500/20 px-8 py-3 rounded-2xl border border-green-500/40">+{currentQ.points}</div>
-                </div>
-              ) : showAnswer ? (
-                <div className="flex flex-col items-center gap-4 w-full" style={{ animation: 'slideUp 0.4s ease-out' }}>
-                  <div className="text-red-400 font-black text-xl flex items-center gap-2">
-                    <X size={24} /> انتهى الوقت!
-                  </div>
-                  {currentQ.answer_media_url && (
-                    <div className="relative w-full flex justify-center">
-                      <div className="absolute -inset-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 blur-xl rounded-3xl opacity-80" />
-                      {currentQ.answer_media_type === 'image' && (
-                        <img src={currentQ.answer_media_url} alt="" className="relative z-10 max-h-[250px] rounded-2xl border-2 border-green-500/30 shadow-[0_10px_40px_rgba(0,0,0,0.5)] object-contain" />
-                      )}
-                      {currentQ.answer_media_type === 'video' && (
-                        <video src={currentQ.answer_media_url} controls className="relative z-10 max-h-[250px] rounded-2xl border-2 border-green-500/30 shadow-[0_10px_40px_rgba(0,0,0,0.5)]" />
-                      )}
-                      {currentQ.answer_media_type === 'audio' && (
-                        <audio src={currentQ.answer_media_url} controls className="relative z-10 w-full max-w-sm" />
-                      )}
-                    </div>
-                  )}
-                  <div className="flex flex-col items-center gap-2 bg-white/5 border border-white/10 rounded-2xl px-6 py-4 shadow-inner w-full">
-                    <span className="text-white/50 font-bold text-sm">الإجابة الصحيحة:</span>
-                    <div className="text-white font-black text-3xl drop-shadow-[0_0_20px_rgba(255,255,255,0.6)] text-green-400">{currentQ.answer}</div>
-                  </div>
-                  {/* Show I answered button only when answer is shown */}
-                  <button onClick={streamerCorrect} className="group relative flex items-center gap-2 bg-gradient-to-br from-yellow-400 to-yellow-600 text-black px-8 py-3 rounded-full font-black text-lg hover:scale-105 active:scale-95 transition-all shadow-[0_0_50px_rgba(234,179,8,0.5)] overflow-hidden mt-4">
-                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 rounded-full" />
-                    <span className="relative z-10 flex items-center gap-2">😎 أنا جاوبتها!</span>
-                  </button>
-                  <button onClick={() => alert('تم الإبلاغ عن خطأ! سيتم مراجعة السؤال.')} className="text-orange-400 hover:text-orange-300 font-bold text-sm transition-colors px-4 py-2 hover:bg-orange-500/10 rounded-full border border-transparent hover:border-orange-500/30 flex items-center gap-2">
-                    ⚠️ حصل خطأ - النظام لم يصطد الكلمة
-                  </button>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center w-full gap-4">
-                  <div className="flex items-center gap-3 bg-black/40 backdrop-blur-md px-6 py-3 rounded-full border border-white/10 shadow-lg">
-                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_20px_rgba(239,68,68,1)]" />
-                    <span className="text-white/90 font-bold text-base tracking-widest uppercase">جاري الاستماع للشات...</span>
-                  </div>
-                  <div className="text-white/30 text-sm font-bold">انتظر انتهاء الوقت أو ظهور الإجابة</div>
-                </div>
-              )
-            ) : (
-              // Friends mode answer display
-              showAnswer && (
-                <div className="flex flex-col items-center w-full" style={{ animation: 'zoomBounce 0.5s ease-out' }}>
-                  <div className="text-white/40 text-xs font-bold mb-3">الإجابة الصحيحة:</div>
-                  {currentQ.answer_media_url && (
-                    <div className="relative mb-4 group w-full flex justify-center">
-                      <div className="absolute -inset-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 blur-xl rounded-3xl opacity-80" />
-                      {currentQ.answer_media_type === 'image' && (
-                        <img src={currentQ.answer_media_url} alt="" className="relative z-10 max-h-[250px] rounded-xl border-2 border-green-500/30 shadow-[0_10px_40px_rgba(0,0,0,0.5)] object-contain" />
-                      )}
-                      {currentQ.answer_media_type === 'video' && (
-                        <video src={currentQ.answer_media_url} controls className="relative z-10 max-h-[250px] rounded-xl border-2 border-green-500/30 shadow-[0_10px_40px_rgba(0,0,0,0.5)]" />
-                      )}
-                      {currentQ.answer_media_type === 'audio' && (
-                        <audio src={currentQ.answer_media_url} controls className="relative z-10 w-full max-w-sm" />
-                      )}
-                    </div>
-                  )}
-                  <div className="text-4xl font-black text-green-400" style={{ textShadow: '0 0 40px rgba(74,222,128,0.4)' }}>{currentQ.answer}</div>
-                </div>
-              )
-            )}
-          </div>
-
-          {/* Right Side: Question */}
-          <div className="flex-1 flex flex-col items-center text-center px-4 relative z-10 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-6 shadow-2xl">
+          {/* Question Section */}
+          <div className="w-full flex flex-col items-center text-center">
             {/* Question Media */}
             {currentQ.media_url && (
-              <div className="mb-4 w-full flex justify-center" style={{ animation: 'fadeIn 0.5s ease-out' }}>
+              <div className="mb-6 w-full flex justify-center" style={{ animation: 'fadeIn 0.5s ease-out' }}>
                 {currentQ.media_type === 'image' && (
-                  <div className="relative max-w-md w-full group">
-                    <div className="absolute -inset-2 bg-gradient-to-r from-red-500/20 via-yellow-500/20 to-red-500/20 blur-xl rounded-3xl opacity-60 group-hover:opacity-100 transition-opacity" />
-                    <img src={currentQ.media_url} alt="" className="relative z-10 w-full max-h-[300px] object-contain rounded-xl border-2 border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.6)]" />
+                  <div className="relative max-w-lg w-full group">
+                    <div className="absolute -inset-3 bg-gradient-to-r from-red-500/30 to-orange-500/30 blur-xl rounded-3xl opacity-60 group-hover:opacity-100 transition-opacity" />
+                    <img src={currentQ.media_url} alt="" className="relative z-10 w-full max-h-[350px] object-contain rounded-2xl border-2 border-red-500/40 shadow-[0_20px_60px_rgba(220,38,38,0.4)]" />
                   </div>
                 )}
                 {currentQ.media_type === 'video' && (
-                  <div className="relative max-w-lg w-full group">
-                    <div className="absolute -inset-2 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-purple-500/20 blur-xl rounded-3xl opacity-60" />
-                    <video src={currentQ.media_url} controls autoPlay className="relative z-10 w-full max-h-[300px] rounded-xl border-2 border-purple-500/30 shadow-[0_20px_60px_rgba(0,0,0,0.6)]" />
+                  <div className="relative max-w-xl w-full group">
+                    <div className="absolute -inset-3 bg-gradient-to-r from-red-500/30 to-orange-500/30 blur-xl rounded-3xl opacity-60 group-hover:opacity-100 transition-opacity" />
+                    <video src={currentQ.media_url} controls autoPlay className="relative z-10 w-full max-h-[350px] rounded-2xl border-2 border-red-500/40 shadow-[0_20px_60px_rgba(220,38,38,0.4)]" />
                   </div>
                 )}
                 {currentQ.media_type === 'audio' && (
-                  <div className="relative w-full max-w-md group">
-                    <div className="absolute -inset-2 bg-gradient-to-r from-pink-500/10 via-indigo-500/10 to-pink-500/10 blur-xl rounded-3xl opacity-60" />
-                    <div className="relative z-10 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-4 flex flex-col items-center gap-3 shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
-                      <div className="flex items-center gap-2 text-pink-400 font-black text-base"><span className="text-2xl">🎵</span> استمع وجاوب!</div>
-                      <audio src={currentQ.media_url} controls autoPlay className="w-full" style={{ filter: 'hue-rotate(300deg)' }} />
+                  <div className="relative w-full max-w-lg group">
+                    <div className="absolute -inset-3 bg-gradient-to-r from-red-500/30 to-orange-500/30 blur-xl rounded-3xl opacity-60 group-hover:opacity-100 transition-opacity" />
+                    <div className="relative z-10 bg-gradient-to-br from-red-600/20 to-red-800/20 backdrop-blur-xl border border-red-500/40 rounded-2xl p-6 flex flex-col items-center gap-4 shadow-[0_20px_60px_rgba(220,38,38,0.4)]">
+                      <div className="flex items-center gap-3 text-red-400 font-black text-lg"><span className="text-3xl">🎵</span> استمع وجاوب!</div>
+                      <audio src={currentQ.media_url} controls autoPlay className="w-full" />
                     </div>
                   </div>
                 )}
@@ -746,15 +665,93 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
 
             {/* Question Text */}
             {currentQ.text && (
-              <h2 className={`font-black text-white leading-tight w-full px-2 ${currentQ.media_url ? 'text-2xl md:text-3xl lg:text-4xl' : (mode === 'chat' ? 'text-3xl md:text-4xl lg:text-5xl' : 'text-4xl md:text-5xl lg:text-6xl')}`} style={{ textShadow: '0 10px 40px rgba(0,0,0,0.8), 0 0 20px rgba(255,255,255,0.2)' }}>
+              <h2 className={`font-black text-white leading-tight w-full px-4 ${currentQ.media_url ? 'text-3xl md:text-4xl lg:text-5xl' : (mode === 'chat' ? 'text-4xl md:text-5xl lg:text-6xl' : 'text-5xl md:text-6xl lg:text-7xl')}`} style={{ textShadow: '0 10px 40px rgba(0,0,0,0.8), 0 0 30px rgba(220,38,38,0.3)' }}>
                 {currentQ.text}
               </h2>
             )}
           </div>
 
+          {/* Answer Section */}
+          <div className="w-full flex flex-col items-center">
+            {mode === 'chat' ? (
+              chatWinner ? (
+                <div className="flex flex-col items-center gap-4 w-full" style={{ animation: 'zoomBounce 0.5s ease-out' }}>
+                  <div className="text-green-400 font-black text-3xl mb-2">🎉 الفائز!</div>
+                  <div className="flex items-center gap-6">
+                    <ProAvatar url={chatWinner.avatar} username={chatWinner.username} size="w-24 h-24" className="overflow-visible shadow-[0_0_50px_rgba(34,197,94,0.8)]" />
+                    <div className="text-white font-black text-5xl">{chatWinner.username}</div>
+                  </div>
+                  <div className="text-green-400 font-black text-4xl bg-green-500/20 px-10 py-4 rounded-2xl border border-green-500/40 shadow-[0_0_30px_rgba(34,197,94,0.3)]">+{currentQ.points}</div>
+                </div>
+              ) : showAnswer ? (
+                <div className="flex flex-col items-center gap-4 w-full" style={{ animation: 'slideUp 0.4s ease-out' }}>
+                  <div className="text-red-400 font-black text-2xl flex items-center gap-3">
+                    <X size={28} /> انتهى الوقت!
+                  </div>
+                  {currentQ.answer_media_url && (
+                    <div className="relative w-full flex justify-center">
+                      <div className="absolute -inset-3 bg-gradient-to-r from-green-500/30 to-emerald-500/30 blur-xl rounded-3xl opacity-80" />
+                      {currentQ.answer_media_type === 'image' && (
+                        <img src={currentQ.answer_media_url} alt="" className="relative z-10 max-h-[300px] rounded-2xl border-2 border-green-500/40 shadow-[0_10px_40px_rgba(0,0,0,0.5)] object-contain" />
+                      )}
+                      {currentQ.answer_media_type === 'video' && (
+                        <video src={currentQ.answer_media_url} controls className="relative z-10 max-h-[300px] rounded-2xl border-2 border-green-500/40 shadow-[0_10px_40px_rgba(0,0,0,0.5)]" />
+                      )}
+                      {currentQ.answer_media_type === 'audio' && (
+                        <audio src={currentQ.answer_media_url} controls className="relative z-10 w-full max-w-md" />
+                      )}
+                    </div>
+                  )}
+                  <div className="flex flex-col items-center gap-3 bg-red-600/10 border border-red-500/30 rounded-2xl px-8 py-5 shadow-inner w-full">
+                    <span className="text-white/50 font-bold text-lg">الإجابة الصحيحة:</span>
+                    <div className="text-white font-black text-4xl drop-shadow-[0_0_20px_rgba(255,255,255,0.6)] text-green-400">{currentQ.answer}</div>
+                  </div>
+                  {/* Show I answered button only when answer is shown */}
+                  <button onClick={streamerCorrect} className="group relative flex items-center gap-3 bg-gradient-to-br from-yellow-400 to-yellow-600 text-black px-10 py-4 rounded-full font-black text-xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_50px_rgba(234,179,8,0.5)] overflow-hidden mt-4">
+                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 rounded-full" />
+                    <span className="relative z-10 flex items-center gap-3">😎 أنا جاوبتها!</span>
+                  </button>
+                  <button onClick={() => alert('تم الإبلاغ عن خطأ! سيتم مراجعة السؤال.')} className="text-orange-400 hover:text-orange-300 font-bold text-base transition-colors px-6 py-3 hover:bg-orange-500/10 rounded-full border border-transparent hover:border-orange-500/30 flex items-center gap-2">
+                    ⚠️ حصل خطأ - النظام لم يصطد الكلمة
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center w-full gap-4">
+                  <div className="flex items-center gap-4 bg-red-600/20 backdrop-blur-md px-8 py-4 rounded-full border border-red-500/30 shadow-lg">
+                    <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse shadow-[0_0_20px_rgba(239,68,68,1)]" />
+                    <span className="text-white/90 font-bold text-lg tracking-widest uppercase">جاري الاستماع للشات...</span>
+                  </div>
+                  <div className="text-white/30 text-base font-bold">انتظر انتهاء الوقت أو ظهور الإجابة</div>
+                </div>
+              )
+            ) : (
+              // Friends mode answer display
+              showAnswer && (
+                <div className="flex flex-col items-center w-full" style={{ animation: 'zoomBounce 0.5s ease-out' }}>
+                  <div className="text-white/40 text-sm font-bold mb-4">الإجابة الصحيحة:</div>
+                  {currentQ.answer_media_url && (
+                    <div className="relative mb-6 group w-full flex justify-center">
+                      <div className="absolute -inset-3 bg-gradient-to-r from-green-500/30 to-emerald-500/30 blur-xl rounded-3xl opacity-80" />
+                      {currentQ.answer_media_type === 'image' && (
+                        <img src={currentQ.answer_media_url} alt="" className="relative z-10 max-h-[300px] rounded-2xl border-2 border-green-500/40 shadow-[0_10px_40px_rgba(0,0,0,0.5)] object-contain" />
+                      )}
+                      {currentQ.answer_media_type === 'video' && (
+                        <video src={currentQ.answer_media_url} controls className="relative z-10 max-h-[300px] rounded-2xl border-2 border-green-500/40 shadow-[0_10px_40px_rgba(0,0,0,0.5)]" />
+                      )}
+                      {currentQ.answer_media_type === 'audio' && (
+                        <audio src={currentQ.answer_media_url} controls className="relative z-10 w-full max-w-md" />
+                      )}
+                    </div>
+                  )}
+                  <div className="text-5xl font-black text-green-400" style={{ textShadow: '0 0 40px rgba(74,222,128,0.4)' }}>{currentQ.answer}</div>
+                </div>
+              )
+            )}
+          </div>
+
           {/* Chat Answers Feed (Only in chat mode) */}
           {mode === 'chat' && !showAnswer && !chatWinner && (
-            <div className="absolute bottom-8 left-8 right-8 max-w-2xl mx-auto max-h-[120px] overflow-y-auto rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)] px-1 py-2" style={{ scrollbarWidth: 'none' }}>
+            <div className="absolute bottom-8 left-8 right-8 max-w-2xl mx-auto max-h-[120px] overflow-y-auto rounded-xl bg-black/60 backdrop-blur-xl border border-red-500/20 shadow-[0_0_40px_rgba(0,0,0,0.5)] px-1 py-2" style={{ scrollbarWidth: 'none' }}>
               <div className="flex flex-col-reverse gap-1 px-3">
                 {[...chatAnswers].reverse().map((a, i) => (
                   <div key={i} className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${i === 0 ? 'animate-in slide-in-from-bottom-2 duration-300' : ''} ${a.correct ? 'bg-green-500/20 border border-green-500/40 shadow-[0_0_15px_rgba(34,197,94,0.2)]' : 'bg-white/[0.03]'}`}>
@@ -771,17 +768,17 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
 
             {/* Friends Mode Controls */}
             {mode === 'friends' && (
-              <div className="mt-6 flex items-center gap-6">
+              <div className="mt-8 flex items-center gap-6">
                 {!showAnswer ? (
-                  <button onClick={() => setShowAnswer(true)} className="flex items-center gap-3 bg-white text-black px-10 py-5 rounded-full font-black text-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(255,255,255,0.3)]">
+                  <button onClick={() => setShowAnswer(true)} className="flex items-center gap-3 bg-red-600 text-white px-12 py-5 rounded-full font-black text-2xl hover:bg-red-500 active:scale-95 transition-all shadow-[0_0_30px_rgba(220,38,38,0.4)] border border-red-500/30">
                     <Eye size={28} /> كشف الإجابة
                   </button>
                 ) : (
                   <div className="flex items-center gap-6">
-                    <button onClick={friendsCorrect} className="flex items-center gap-3 bg-gradient-to-r from-green-500 to-green-700 text-white px-10 py-5 rounded-full font-black text-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(34,197,94,0.4)]">
+                    <button onClick={friendsCorrect} className="flex items-center gap-3 bg-gradient-to-r from-green-500 to-green-700 text-white px-12 py-5 rounded-full font-black text-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(34,197,94,0.4)]">
                       <Check size={28} /> صحيحة
                     </button>
-                    <button onClick={friendsWrong} className="flex items-center gap-3 bg-gradient-to-r from-red-500 to-red-700 text-white px-10 py-5 rounded-full font-black text-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(239,68,68,0.4)]">
+                    <button onClick={friendsWrong} className="flex items-center gap-3 bg-gradient-to-r from-red-500 to-red-700 text-white px-12 py-5 rounded-full font-black text-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(239,68,68,0.4)]">
                       <X size={28} /> خاطئة
                     </button>
                   </div>
