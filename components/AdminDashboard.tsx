@@ -36,7 +36,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [isAddingMahmahCategory, setIsAddingMahmahCategory] = useState(false);
   const [isAddingMahmahQuestion, setIsAddingMahmahQuestion] = useState(false);
   const [newMahmahCategory, setNewMahmahCategory] = useState({ name: '', image_url: '' });
-  const [newMahmahQuestion, setNewMahmahQuestion] = useState({ points: 100, text: '', answer: '', media_url: '', media_type: '' as string, answer_image_url: '' });
+  const [newMahmahQuestion, setNewMahmahQuestion] = useState({ points: 100, text: '', answer: '', media_url: '', media_type: '' as string, answer_media_url: '', answer_media_type: '' as string });
   const [uploadingQuestionMedia, setUploadingQuestionMedia] = useState(false);
   const [uploadingAnswerImage, setUploadingAnswerImage] = useState(false);
   
@@ -278,10 +278,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     setIsLoading(true);
     const insertData: any = { category_id: selectedMahmahCategory.id, points: newMahmahQuestion.points, text: newMahmahQuestion.text, answer: newMahmahQuestion.answer };
     if (newMahmahQuestion.media_url) { insertData.media_url = newMahmahQuestion.media_url; insertData.media_type = newMahmahQuestion.media_type || 'image'; }
-    if (newMahmahQuestion.answer_image_url) { insertData.answer_image_url = newMahmahQuestion.answer_image_url; }
+    if (newMahmahQuestion.answer_media_url) { insertData.answer_media_url = newMahmahQuestion.answer_media_url; insertData.answer_media_type = newMahmahQuestion.answer_media_type || 'image'; }
     const { error } = await supabase.from('mahmah_questions').insert([insertData]);
     if (error) showStatus('خطأ في الإضافة: ' + error.message, true);
-    else { showStatus('تمت الإضافة بنجاح'); setIsAddingMahmahQuestion(false); setNewMahmahQuestion({ points: 100, text: '', answer: '', media_url: '', media_type: '', answer_image_url: '' }); fetchData(); }
+    else { showStatus('تمت الإضافة بنجاح'); setIsAddingMahmahQuestion(false); setNewMahmahQuestion({ points: 100, text: '', answer: '', media_url: '', media_type: '', answer_media_url: '', answer_media_type: '' }); fetchData(); }
     setIsLoading(false);
   };
 
@@ -1142,31 +1142,54 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                         )}
                       </div>
 
-                      {/* Answer Image Section */}
+                      {/* Answer Media Section */}
                       <div className="border-t border-white/5 pt-6 mt-2">
-                        <h4 className="text-sm font-black text-emerald-400 uppercase tracking-widest mb-4 flex items-center gap-2">🖼️ صورة الإجابة (اختياري)</h4>
-                        <div className="flex gap-2">
-                          <input type="text" value={newMahmahQuestion.answer_image_url} onChange={e => setNewMahmahQuestion({ ...newMahmahQuestion, answer_image_url: e.target.value })}
-                            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold placeholder-white/20 focus:outline-none focus:border-emerald-500 transition-all text-sm"
-                            placeholder="رابط صورة الإجابة أو ارفع صورة..." />
-                          <label className={`shrink-0 w-12 h-12 flex items-center justify-center rounded-xl border border-dashed border-emerald-500/50 cursor-pointer hover:bg-emerald-500/10 transition-colors ${uploadingAnswerImage ? 'opacity-50 pointer-events-none' : ''}`}>
-                            <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
-                              if (e.target.files && e.target.files[0]) {
-                                setUploadingAnswerImage(true);
-                                try {
-                                  const url = await uploadToCloudinary(e.target.files[0]);
-                                  if (url) setNewMahmahQuestion(prev => ({ ...prev, answer_image_url: url }));
-                                } catch (err) { showStatus('فشل رفع الصورة', true); }
-                                setUploadingAnswerImage(false);
-                              }
-                            }} />
-                            {uploadingAnswerImage ? <RotateCw className="animate-spin text-emerald-500" size={20} /> : <Upload className="text-emerald-500" size={20} />}
-                          </label>
+                        <h4 className="text-sm font-black text-emerald-400 uppercase tracking-widest mb-4 flex items-center gap-2">🎬 ميديا الإجابة (اختياري)</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Answer Media Type Selector */}
+                          <div>
+                            <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">نوع ميديا الإجابة</label>
+                            <div className="flex gap-2">
+                              {[{t:'image',l:'🖼️ صورة',c:'border-blue-500 bg-blue-500/10 text-blue-400'},{t:'video',l:'🎥 فيديو',c:'border-purple-500 bg-purple-500/10 text-purple-400'},{t:'audio',l:'🎵 صوت',c:'border-pink-500 bg-pink-500/10 text-pink-400'}].map(m => (
+                                <button key={m.t} type="button" onClick={() => setNewMahmahQuestion({ ...newMahmahQuestion, answer_media_type: newMahmahQuestion.answer_media_type === m.t ? '' : m.t })}
+                                  className={`flex-1 py-2.5 rounded-xl font-black text-xs border-2 transition-all ${newMahmahQuestion.answer_media_type === m.t ? m.c : 'border-white/10 bg-black/50 text-zinc-500 hover:border-white/20'}`}>
+                                  {m.l}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          {/* Answer Media Upload */}
+                          <div>
+                            <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">ملف / رابط ميديا الإجابة</label>
+                            <div className="flex gap-2">
+                              <input type="text" value={newMahmahQuestion.answer_media_url} onChange={e => setNewMahmahQuestion({ ...newMahmahQuestion, answer_media_url: e.target.value })}
+                                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold placeholder-white/20 focus:outline-none focus:border-emerald-500 transition-all text-sm"
+                                placeholder="الصق رابط أو ارفع ملف..." />
+                              <label className={`shrink-0 w-12 h-12 flex items-center justify-center rounded-xl border border-dashed border-emerald-500/50 cursor-pointer hover:bg-emerald-500/10 transition-colors ${uploadingAnswerImage ? 'opacity-50 pointer-events-none' : ''}`}>
+                                <input type="file" className="hidden" accept="image/*,video/*,audio/*" onChange={async (e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    setUploadingAnswerImage(true);
+                                    try {
+                                      const file = e.target.files[0];
+                                      const type = file.type.startsWith('video') ? 'video' : file.type.startsWith('audio') ? 'audio' : 'image';
+                                      const url = await uploadToCloudinary(file);
+                                      if (url) setNewMahmahQuestion(prev => ({ ...prev, answer_media_url: url, answer_media_type: type }));
+                                    } catch (err) { showStatus('فشل رفع الملف', true); }
+                                    setUploadingAnswerImage(false);
+                                  }
+                                }} />
+                                {uploadingAnswerImage ? <RotateCw className="animate-spin text-emerald-500" size={20} /> : <Upload className="text-emerald-500" size={20} />}
+                              </label>
+                            </div>
+                          </div>
                         </div>
-                        {newMahmahQuestion.answer_image_url && (
-                          <div className="mt-3 p-3 bg-black/30 rounded-xl border border-white/5 relative inline-block">
-                            <button type="button" onClick={() => setNewMahmahQuestion({ ...newMahmahQuestion, answer_image_url: '' })} className="absolute top-2 right-2 w-6 h-6 bg-red-500/80 rounded-full flex items-center justify-center text-white hover:bg-red-500 z-10"><X size={14} /></button>
-                            <img src={newMahmahQuestion.answer_image_url} alt="answer preview" className="max-h-32 rounded-lg object-cover" />
+                        {/* Answer Media Preview */}
+                        {newMahmahQuestion.answer_media_url && (
+                          <div className="mt-3 p-3 bg-black/30 rounded-xl border border-white/5 relative">
+                            <button type="button" onClick={() => setNewMahmahQuestion({ ...newMahmahQuestion, answer_media_url: '', answer_media_type: '' })} className="absolute top-2 right-2 w-6 h-6 bg-red-500/80 rounded-full flex items-center justify-center text-white hover:bg-red-500 z-10"><X size={14} /></button>
+                            {newMahmahQuestion.answer_media_type === 'image' && <img src={newMahmahQuestion.answer_media_url} alt="answer preview" className="max-h-32 rounded-lg object-cover" />}
+                            {newMahmahQuestion.answer_media_type === 'video' && <video src={newMahmahQuestion.answer_media_url} controls className="max-h-32 rounded-lg" />}
+                            {newMahmahQuestion.answer_media_type === 'audio' && <audio src={newMahmahQuestion.answer_media_url} controls className="w-full" />}
                           </div>
                         )}
                       </div>
@@ -1202,8 +1225,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                                 {q.media_type === 'image' && <span className="text-blue-400" title="صورة">🖼️</span>}
                                 {q.media_type === 'video' && <span className="text-purple-400" title="فيديو">🎥</span>}
                                 {q.media_type === 'audio' && <span className="text-pink-400" title="صوت">🎵</span>}
-                                {q.answer_image_url && <span className="text-emerald-400" title="صورة إجابة">✅🖼️</span>}
-                                {!q.media_url && !q.answer_image_url && <span className="text-zinc-600">—</span>}
+                                {q.answer_media_type === 'image' && <span className="text-emerald-400" title="صورة إجابة">✅🖼️</span>}
+                                {q.answer_media_type === 'video' && <span className="text-emerald-400" title="فيديو إجابة">✅🎥</span>}
+                                {q.answer_media_type === 'audio' && <span className="text-emerald-400" title="صوت إجابة">✅🎵</span>}
+                                {!q.media_url && !q.answer_media_url && <span className="text-zinc-600">—</span>}
                               </div>
                             </td>
                             <td className="p-4 text-emerald-400 font-black">{q.answer}</td>
