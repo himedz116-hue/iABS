@@ -55,7 +55,8 @@ export type ViewState =
   | 'EMOJI_CODE'
   | 'LETTER_GAME'
   | 'HIGHER_LOWER'
-  | 'BUZZER_PAD';
+  | 'BUZZER_PAD'
+  | 'ABOUT';
 
 // Added GameType to fix import error in TournamentManager.tsx
 export type GameType = 'TRIVIA' | 'BLUR' | 'FLAGS' | 'TYPING' | 'CUPS' | 'GRID' | 'WHEEL' | 'PAINT' | 'BATTLE' | 'BOMB' | 'VOTE' | 'DRAW' | 'FRUIT' | 'LOGO' | 'FORBIDDEN' | 'BOSS' | 'ROULETTE' | 'ZOMBIE' | 'BRIDGE' | 'AUCTION' | 'LETTER' | 'HIGHER_LOWER';

@@ -29,6 +29,7 @@ import { HigherLowerGame } from './components/HigherLowerGame';
 import { MahmahGame } from './components/MahmahGame/MahmahGame';
 import { LetterHexagonGame } from './components/LetterHexagonGame';
 import { BuzzerPad } from './components/BuzzerPad';
+import { AboutPage } from './components/AboutPage';
 import { AdminDashboard } from './components/AdminDashboard';
 import { GlobalAnnouncement } from './components/GlobalAnnouncement';
 import { ViewState } from './types';
@@ -463,6 +464,7 @@ const App: React.FC = () => {
       case 'MAHMAH_GAME': return <MahmahGame onBack={handleGoHome} />;
       case 'LETTER_GAME': return <LetterHexagonGame onHome={handleGoHome} isOBS={obsMode} onToggleOBSPreview={() => setShowObsPreview(!showObsPreview)} obsPreviewActive={showObsPreview} />;
       case 'BUZZER_PAD': return <BuzzerPad />;
+      case 'ABOUT': return <AboutPage onBack={handleGoHome} />;
 
       case 'HOST_LOGIN': return (
         <div className="flex-1 w-full flex items-center justify-center p-4 md:p-8">
@@ -869,6 +871,17 @@ const App: React.FC = () => {
                   لوحة الصدارة
                 </button>
               )}
+
+              <button onClick={() => setCurrentView('ABOUT')}
+                className="group relative flex items-center gap-4 px-8 py-4 bg-gradient-to-b from-purple-600/20 to-purple-700/10 border border-purple-500/20 hover:border-purple-400/50 rounded-2xl transition-all duration-500 hover:scale-105 active:scale-95 overflow-hidden"
+                style={{transform:'rotateX(2deg) translateZ(15px)', transformStyle:'preserve-3d', perspective:'500px'}}>
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/10 to-purple-500/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 skew-x-[-20deg]"></div>
+                <Sparkles size={28} className="text-purple-500 group-hover:rotate-12 transition-transform drop-shadow-[0_0_15px_rgba(147,51,234,0.6)]" />
+                <div className="flex flex-col items-start">
+                  <span className="text-white font-black text-base tracking-wider">عن المنصة</span>
+                  <span className="text-purple-500/50 font-bold text-[9px] uppercase tracking-[0.3em]">About iABS</span>
+                </div>
+              </button>
 
               {!isEditMode && userRole === 'admin' && (
                 <button onClick={() => setIsEditMode(true)}

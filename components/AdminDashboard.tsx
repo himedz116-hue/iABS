@@ -18,7 +18,7 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'bans' | 'announcements' | 'arena' | 'promo' | 'logs' | 'system' | 'store' | 'mahmah'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'bans' | 'announcements' | 'arena' | 'promo' | 'logs' | 'system' | 'store' | 'mahmah' | 'higher_lower'>('overview');
   const [profiles, setProfiles] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [promoCodes, setPromoCodes] = useState<any[]>([]);
@@ -28,6 +28,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [editingItem, setEditingItem] = useState<any>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  
+  // Mahmah States
   const [mahmahCategories, setMahmahCategories] = useState<any[]>([]);
   const [mahmahQuestions, setMahmahQuestions] = useState<any[]>([]);
   const [selectedMahmahCategory, setSelectedMahmahCategory] = useState<any>(null);
@@ -37,6 +39,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [newMahmahQuestion, setNewMahmahQuestion] = useState({ points: 100, text: '', answer: '', media_url: '', media_type: '' as string, answer_image_url: '' });
   const [uploadingQuestionMedia, setUploadingQuestionMedia] = useState(false);
   const [uploadingAnswerImage, setUploadingAnswerImage] = useState(false);
+  
+  // Higher/Lower States
+  const [hlQuestions, setHlQuestions] = useState<any[]>([]);
+  const [selectedHlStage, setSelectedHlStage] = useState<number | null>(null);
+  const [isAddingHlQuestion, setIsAddingHlQuestion] = useState(false);
+  const [newHlQuestion, setNewHlQuestion] = useState({ text: '', is_higher: true, fact: '' });
+  
   const [showInactive, setShowInactive] = useState(false);
 
   const [targetUser, setTargetUser] = useState('');
@@ -156,6 +165,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         if (cData) setMahmahCategories(cData);
         const { data: qData } = await supabase.from('mahmah_questions').select('*').order('created_at', { ascending: true });
         if (qData) setMahmahQuestions(qData);
+      }
+      if (activeTab === 'higher_lower') {
+        const { data: hlData } = await supabase.from('higher_lower_questions').select('*').order('stage_number', { ascending: true }).order('id', { ascending: true });
+        if (hlData) setHlQuestions(hlData);
       }
     } catch (e) { console.error(e); }
     setIsLoading(false);
@@ -290,6 +303,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     setIsLoading(false);
   };
 
+  const handleSaveHlQuestion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedHlStage || !newHlQuestion.text) return showStatus('يرجى ملء جميع الحقول', true);
+    setIsLoading(true);
+    const insertData = { 
+      stage_number: selectedHlStage, 
+      question_text: newHlQuestion.text, 
+      is_higher: newHlQuestion.is_higher, 
+      fact: newHlQuestion.fact || null
+    };
+    
+    const { error } = await supabase.from('higher_lower_questions').insert([insertData]);
+    if (error) {
+        console.error(error);
+        showStatus('خطأ في الإضافة: ' + error.message, true);
+    } else { 
+        showStatus('تمت الإضافة بنجاح'); 
+        setIsAddingHlQuestion(false); 
+        setNewHlQuestion({ text: '', is_higher: true, fact: '' }); 
+        fetchData(); 
+    }
+    setIsLoading(false);
+  };
+
+  const handleDeleteHlQuestion = async (id: string) => {
+    if (!confirm('هل أنت متأكد من حذف هذا السؤال؟')) return;
+    setIsLoading(true);
+    const { error } = await supabase.from('higher_lower_questions').delete().eq('id', id);
+    if (error) showStatus('خطأ في الحذف: ' + error.message, true);
+    else { showStatus('تم الحذف بنجاح'); fetchData(); }
+    setIsLoading(false);
+  };
+
   const handleDeleteStoreItem = async (id: string) => {
     if (!confirm('هل أنت متأكد من الحذف؟')) return;
     setIsLoading(true);
@@ -309,6 +355,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'promo', label: 'الأكواد', icon: Ticket, color: 'text-yellow-500' },
     { id: 'store', label: 'المتجر', icon: ShoppingBag, color: 'text-emerald-500' },
     { id: 'mahmah', label: 'إدارة محمح', icon: Brain, color: 'text-indigo-500' },
+    { id: 'higher_lower', label: 'إدارة أعلى/أقل', icon: Activity, color: 'text-pink-500' },
     { id: 'arena', label: 'الساحة', icon: Palette, color: 'text-purple-500' },
     { id: 'logs', label: 'السجل', icon: Terminal, color: 'text-zinc-400' },
     { id: 'system', label: 'الصيانة', icon: Settings, color: 'text-red-600' },
@@ -1168,6 +1215,135 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                       </tbody>
                     </table>
                     {mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id).length === 0 && (
+                      <div className="py-12 text-center text-zinc-500 font-bold italic">لا توجد أسئلة، أضف أسئلة جديدة.</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* HIGHER LOWER TAB */}
+          {activeTab === 'higher_lower' && (
+            <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-10 duration-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-4xl font-black text-pink-500 italic tracking-tighter">HIGHER / LOWER</h2>
+                  <p className="text-zinc-500 font-bold mt-2 text-sm italic uppercase">Total Questions: {hlQuestions.length}</p>
+                </div>
+                <div className="flex gap-2">
+                  {selectedHlStage && (
+                    <button onClick={() => setSelectedHlStage(null)} className="px-6 py-3 bg-zinc-800 text-white rounded-xl font-black text-sm hover:bg-zinc-700 transition-all flex items-center gap-2">
+                      العودة للمراحل
+                    </button>
+                  )}
+                  {selectedHlStage && (
+                    <button onClick={() => setIsAddingHlQuestion(true)} className="px-6 py-3 bg-pink-600/10 text-pink-500 border border-pink-500/20 rounded-xl font-black text-sm hover:bg-pink-600 hover:text-white transition-all flex items-center gap-2">
+                      <Plus size={18} /> سؤال جديد
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {!selectedHlStage ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {(() => {
+                    const maxStage = Math.max(30, ...hlQuestions.map(q => q.stage_number));
+                    const stagesList = Array.from({ length: maxStage + 1 }, (_, i) => i + 1);
+                    return stagesList.map(stageNum => {
+                      const count = hlQuestions.filter(q => q.stage_number === stageNum).length;
+                      return (
+                        <button key={stageNum} onClick={() => setSelectedHlStage(stageNum)} 
+                          className="bg-[#0a0a0a] border border-white/5 hover:border-pink-500/50 hover:bg-pink-900/10 rounded-2xl p-4 text-center shadow-lg transition-all flex flex-col items-center justify-center gap-2 group">
+                          <div className="w-12 h-12 rounded-full bg-pink-500/10 text-pink-500 flex items-center justify-center font-black text-xl group-hover:bg-pink-500 group-hover:text-white transition-colors">
+                            {stageNum}
+                          </div>
+                          <h3 className="text-white font-black">مرحلة {stageNum}</h3>
+                          <p className="text-pink-400 font-bold text-xs">{count} أسئلة</p>
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4 p-6 bg-gradient-to-r from-pink-900/20 to-black border border-pink-500/20 rounded-3xl">
+                    <div className="w-20 h-20 rounded-2xl bg-pink-500/20 text-pink-500 flex items-center justify-center font-black text-4xl border-2 border-pink-500/50 shadow-[0_0_20px_rgba(236,72,153,0.3)]">
+                      {selectedHlStage}
+                    </div>
+                    <div>
+                      <h2 className="text-3xl font-black text-white">المرحلة {selectedHlStage}</h2>
+                      <p className="text-pink-400 font-bold">إدارة أسئلة أعلى أم أقل لهذه المرحلة</p>
+                    </div>
+                  </div>
+
+                  {isAddingHlQuestion && (
+                    <form onSubmit={handleSaveHlQuestion} className="bg-pink-900/10 border border-pink-500/20 rounded-3xl p-6 space-y-4 shadow-2xl relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-1 h-full bg-pink-500"></div>
+                      <h3 className="text-xl font-black text-white flex items-center gap-2 mb-4"><Plus size={20} className="text-pink-500" /> إضافة سؤال</h3>
+                      
+                      <div className="grid grid-cols-1 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">نص السؤال</label>
+                          <input type="text" value={newHlQuestion.text} onChange={e => setNewHlQuestion({ ...newHlQuestion, text: e.target.value })}
+                            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold placeholder-white/20 focus:outline-none focus:border-pink-500 transition-all"
+                            placeholder="هل عدد سكان اليابان أعلى أم أقل من 120 مليون؟" required />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">الإجابة الصحيحة</label>
+                          <div className="flex gap-4">
+                            <label className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${newHlQuestion.is_higher ? 'border-green-500 bg-green-500/10 text-green-400' : 'border-white/10 bg-black/50 text-zinc-500 hover:border-white/30'}`}>
+                              <input type="radio" className="hidden" checked={newHlQuestion.is_higher} onChange={() => setNewHlQuestion({ ...newHlQuestion, is_higher: true })} />
+                              <span className="font-black text-lg">أعلى</span>
+                            </label>
+                            <label className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${!newHlQuestion.is_higher ? 'border-red-500 bg-red-500/10 text-red-400' : 'border-white/10 bg-black/50 text-zinc-500 hover:border-white/30'}`}>
+                              <input type="radio" className="hidden" checked={!newHlQuestion.is_higher} onChange={() => setNewHlQuestion({ ...newHlQuestion, is_higher: false })} />
+                              <span className="font-black text-lg">أقل</span>
+                            </label>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">معلومة إضافية (اختياري)</label>
+                          <input type="text" value={newHlQuestion.fact} onChange={e => setNewHlQuestion({ ...newHlQuestion, fact: e.target.value })}
+                            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold placeholder-white/20 focus:outline-none focus:border-pink-500 transition-all"
+                            placeholder="عدد سكان اليابان في عام 2023 هو 123.3 مليون نسمة" />
+                        </div>
+                      </div>
+                      <div className="flex gap-3 justify-end mt-6">
+                        <button type="button" onClick={() => setIsAddingHlQuestion(false)} className="px-6 py-3 bg-white/5 border border-white/10 text-white rounded-xl font-black text-sm hover:bg-white/10 transition-all">إلغاء</button>
+                        <button type="submit" className="px-8 py-3 bg-pink-600 text-white rounded-xl font-black text-sm hover:bg-pink-500 transition-all shadow-[0_0_20px_rgba(236,72,153,0.3)]">حفظ السؤال</button>
+                      </div>
+                    </form>
+                  )}
+
+                  <div className="bg-[#0a0a0a] rounded-3xl border border-white/5 overflow-hidden">
+                    <table className="w-full text-right border-collapse">
+                      <thead>
+                        <tr className="bg-black/50 text-zinc-500 text-xs font-black uppercase tracking-widest">
+                          <th className="p-4">السؤال</th>
+                          <th className="p-4">الإجابة الصحيحة</th>
+                          <th className="p-4">معلومة إضافية</th>
+                          <th className="p-4 text-center w-20">إجراء</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5 font-bold text-sm">
+                        {hlQuestions.filter(q => q.stage_number === selectedHlStage).map(q => (
+                          <tr key={q.id} className="hover:bg-white/[0.02] transition-colors">
+                            <td className="p-4 text-white/90">{q.question_text}</td>
+                            <td className="p-4">
+                              <span className={`px-3 py-1 rounded-full text-xs font-black ${q.is_higher ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
+                                {q.is_higher ? 'أعلى' : 'أقل'}
+                              </span>
+                            </td>
+                            <td className="p-4 text-zinc-400 text-xs">{q.fact || '—'}</td>
+                            <td className="p-4">
+                              <button onClick={() => handleDeleteHlQuestion(q.id)} className="w-full py-2 bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white rounded-lg transition-colors flex justify-center"><Trash2 size={16} /></button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {hlQuestions.filter(q => q.stage_number === selectedHlStage).length === 0 && (
                       <div className="py-12 text-center text-zinc-500 font-bold italic">لا توجد أسئلة، أضف أسئلة جديدة.</div>
                     )}
                   </div>

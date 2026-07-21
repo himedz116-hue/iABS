@@ -164,7 +164,7 @@ export const HigherLowerGame: React.FC<HigherLowerGameProps> = ({ onHome, isOBS 
     // Render Stage Select
     if (gameState === 'stage_select') {
         return (
-            <div className="fixed inset-0 z-50 bg-[#050505] flex flex-col font-sans overflow-hidden" dir="rtl">
+            <div className="flex-1 w-full h-full relative bg-[#050505] flex flex-col font-sans overflow-hidden" dir="rtl">
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none" />
                 
                 {/* Compact Header */}
@@ -185,8 +185,8 @@ export const HigherLowerGame: React.FC<HigherLowerGameProps> = ({ onHome, isOBS 
                 </div>
 
                 {/* Main Grid Area */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 z-10 flex items-center justify-start">
-                    <div className="w-full max-w-4xl grid grid-cols-3 md:grid-cols-6 gap-3 mr-auto ml-24">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 z-10 flex items-center justify-center">
+                    <div className="w-full max-w-4xl grid grid-cols-3 md:grid-cols-6 gap-3 mx-auto">
                         {stages.map(stage => (
                             <button
                                 key={stage}
@@ -206,13 +206,23 @@ export const HigherLowerGame: React.FC<HigherLowerGameProps> = ({ onHome, isOBS 
 
     if (gameState === 'stage_complete') {
         return (
-            <div className="fixed inset-0 z-50 bg-[#050505] flex flex-col items-center justify-center p-6 font-sans overflow-hidden" dir="rtl">
+            <div className="flex-1 w-full h-full relative bg-[#050505] flex flex-col items-center justify-center p-6 font-sans overflow-hidden" dir="rtl">
                 <div className="absolute inset-0 bg-gradient-to-br from-green-900/40 via-black to-blue-900/40" />
                 <Trophy size={100} className="text-yellow-400 mb-6 drop-shadow-[0_0_30px_rgba(250,204,21,0.6)] animate-bounce" />
                 <h1 className="text-5xl font-black text-white italic tracking-tighter mb-4">اكتملت المرحلة {selectedStage}! 🎉</h1>
                 <p className="text-xl text-gray-300 font-bold mb-10">أحسنت! جميع أسئلة هذه المرحلة انتهت.</p>
                 <button 
-                    onClick={() => setGameState('stage_select')}
+                    onClick={() => {
+                        setGameState('stage_select');
+                        setSelectedStage(null);
+                        setQuestions([]);
+                        setCurrentQuestionIndex(0);
+                        setHigherVotes(new Set());
+                        setLowerVotes(new Set());
+                        setShowAnswer(false);
+                        setIsTimerRunning(false);
+                        setRoundWinners([]);
+                    }}
                     className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl text-white font-black text-xl hover:scale-105 transition-all shadow-[0_0_20px_rgba(147,51,234,0.5)]"
                 >
                     العودة للمراحل
@@ -223,8 +233,19 @@ export const HigherLowerGame: React.FC<HigherLowerGameProps> = ({ onHome, isOBS 
 
     const currentQ = questions[currentQuestionIndex];
 
+    // Safety: if currentQ is somehow undefined, go back to stage select
+    if (!currentQ) {
+        return (
+            <div className="flex-1 w-full h-full relative bg-[#050505] flex flex-col items-center justify-center p-6 font-sans" dir="rtl">
+                <p className="text-white text-2xl font-bold mb-6">لا يوجد سؤال حالياً</p>
+                <button onClick={() => { setGameState('stage_select'); setSelectedStage(null); setQuestions([]); setCurrentQuestionIndex(0); }}
+                    className="px-8 py-3 bg-blue-600 rounded-xl text-white font-bold hover:bg-blue-500 transition-all">العودة للمراحل</button>
+            </div>
+        );
+    }
+
     return (
-        <div className="fixed inset-0 z-50 bg-[#050505] flex flex-col items-center justify-center font-sans overflow-hidden" dir="rtl">
+        <div className="flex-1 w-full h-full relative bg-[#050505] flex flex-col items-center justify-center font-sans overflow-hidden" dir="rtl">
             {/* Background effects */}
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 pointer-events-none" />
             
