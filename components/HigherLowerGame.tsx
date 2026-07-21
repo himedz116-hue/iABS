@@ -186,7 +186,7 @@ export const HigherLowerGame: React.FC<HigherLowerGameProps> = ({ onHome, isOBS 
 
                 {/* Main Grid Area */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 z-10 flex items-center justify-start">
-                    <div className="w-full max-w-4xl grid grid-cols-3 md:grid-cols-6 gap-3 mr-auto ml-8">
+                    <div className="w-full max-w-4xl grid grid-cols-3 md:grid-cols-6 gap-3 mr-auto ml-24">
                         {stages.map(stage => (
                             <button
                                 key={stage}
