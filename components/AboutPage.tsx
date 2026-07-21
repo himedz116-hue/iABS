@@ -291,15 +291,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
         {/* Grid pattern overlay */}
         <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
 
-        {/* Top Navbar Action */}
-        <button
-          onClick={onBack}
-          className="fixed top-6 right-6 z-50 px-6 py-3 bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 backdrop-blur-xl border border-red-500/40 rounded-2xl text-white font-black text-sm transition-all hover:scale-105 active:scale-95 flex items-center gap-2.5 shadow-[0_0_25px_rgba(239,68,68,0.5)]"
-        >
-          <Gamepad2 size={18} />
-          <span>دخول الساحة الرئيسية</span>
-          <ChevronRight size={16} className="rotate-180" />
-        </button>
+
 
         <div className="relative z-10 text-center max-w-5xl mx-auto">
           {/* Logo */}
