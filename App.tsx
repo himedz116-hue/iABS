@@ -88,7 +88,7 @@ const App: React.FC = () => {
   const [showOBSModal, setShowOBSModal] = useState(false);
   const [showObsPreview, setShowObsPreview] = useState(false);
 
-  // Authorization State - bypass for OBS
+  // Authorization State - bypass for OBS & public visitors
   const [isAuthorized, setIsAuthorized] = useState<boolean>(() => {
     if (initialParams.obs) return true;
     try {
@@ -98,7 +98,7 @@ const App: React.FC = () => {
         return parsed.valid === true;
       }
     } catch (e) { }
-    return false;
+    return true;
   });
   const [userRole, setUserRole] = useState<'admin' | 'user'>(() => {
     try {
@@ -833,11 +833,12 @@ const App: React.FC = () => {
               {/* Admin Button */}
               {userRole === 'admin' && (
                 <button onClick={() => {
-                  const siteAuth = localStorage.getItem('site_access_granted');
-                  if (siteAuth) {
-                    localStorage.setItem('admin_access_granted', siteAuth);
+                  const adminAuth = localStorage.getItem('admin_access_granted') || localStorage.getItem('site_access_granted');
+                  if (adminAuth) {
+                    setCurrentView('ADMIN_PANEL');
+                  } else {
+                    setCurrentView('ADMIN_LOGIN');
                   }
-                  setCurrentView('ADMIN_PANEL');
                 }}
                   className="group relative flex items-center gap-4 px-8 py-4 bg-gradient-to-b from-blue-600/20 to-blue-700/10 border border-blue-500/20 hover:border-blue-400/50 rounded-2xl transition-all duration-500 hover:scale-105 active:scale-95 overflow-hidden"
                   style={{transform:'rotateX(2deg) translateZ(15px)', transformStyle:'preserve-3d', perspective:'500px'}}>
@@ -933,18 +934,10 @@ const App: React.FC = () => {
     >
       <OBSLinksModal isOpen={showOBSModal} onClose={() => setShowOBSModal(false)} />
       
-      {!isAuthorized && <GlobalPasswordPage onSuccess={(role) => {
-        setUserRole(role);
-        setIsAuthorized(true);
-        if (role === 'user') setCurrentView('USER_DASHBOARD');
-      }} />}
-
-      {/* Only show content if authorized */}
-      {isAuthorized && (
-        <div className="relative w-full h-full flex flex-col items-center">
-          {renderContent(false)}
-        </div>
-      )}
+      {/* Render main content */}
+      <div className="relative w-full h-full flex flex-col items-center">
+        {renderContent(false)}
+      </div>
 
       {activeAnnouncement && (
         <GlobalAnnouncement
