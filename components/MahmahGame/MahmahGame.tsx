@@ -751,44 +751,43 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
               </h2>
             )}
           </div>
-        </div>
 
-        {/* Chat Answers Feed (Only in chat mode) */}
-        {mode === 'chat' && !showAnswer && !chatWinner && (
-          <div className="absolute bottom-8 left-8 right-8 max-w-2xl mx-auto max-h-[120px] overflow-y-auto rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)] px-1 py-2" style={{ scrollbarWidth: 'none' }}>
-            <div className="flex flex-col-reverse gap-1 px-3">
-              {[...chatAnswers].reverse().map((a, i) => (
-                <div key={i} className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${i === 0 ? 'animate-in slide-in-from-bottom-2 duration-300' : ''} ${a.correct ? 'bg-green-500/20 border border-green-500/40 shadow-[0_0_15px_rgba(34,197,94,0.2)]' : 'bg-white/[0.03]'}`}>
-                  <div className="shrink-0">
-                    <ProAvatar username={a.username} size="w-6 h-6" className="overflow-visible" />
-                  </div>
-                    <span className={`font-bold text-xs truncate ${a.correct ? 'text-green-400' : 'text-white/60'}`}>{a.username}</span>
-                    <span className={`text-xs font-bold flex-1 text-right truncate ${a.correct ? 'text-green-300' : 'text-white/30'}`}>{a.text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Friends Mode Controls */}
-          {mode === 'friends' && (
-            <div className="mt-6 flex items-center gap-6">
-              {!showAnswer ? (
-                <button onClick={() => setShowAnswer(true)} className="flex items-center gap-3 bg-white text-black px-10 py-5 rounded-full font-black text-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(255,255,255,0.3)]">
-                  <Eye size={28} /> كشف الإجابة
-                </button>
-              ) : (
-                <div className="flex items-center gap-6">
-                  <button onClick={friendsCorrect} className="flex items-center gap-3 bg-gradient-to-r from-green-500 to-green-700 text-white px-10 py-5 rounded-full font-black text-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(34,197,94,0.4)]">
-                    <Check size={28} /> صحيحة
-                  </button>
-                  <button onClick={friendsWrong} className="flex items-center gap-3 bg-gradient-to-r from-red-500 to-red-700 text-white px-10 py-5 rounded-full font-black text-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(239,68,68,0.4)]">
-                    <X size={28} /> خاطئة
-                  </button>
+          {/* Chat Answers Feed (Only in chat mode) */}
+          {mode === 'chat' && !showAnswer && !chatWinner && (
+            <div className="absolute bottom-8 left-8 right-8 max-w-2xl mx-auto max-h-[120px] overflow-y-auto rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)] px-1 py-2" style={{ scrollbarWidth: 'none' }}>
+              <div className="flex flex-col-reverse gap-1 px-3">
+                {[...chatAnswers].reverse().map((a, i) => (
+                  <div key={i} className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${i === 0 ? 'animate-in slide-in-from-bottom-2 duration-300' : ''} ${a.correct ? 'bg-green-500/20 border border-green-500/40 shadow-[0_0_15px_rgba(34,197,94,0.2)]' : 'bg-white/[0.03]'}`}>
+                    <div className="shrink-0">
+                      <ProAvatar username={a.username} size="w-6 h-6" className="overflow-visible" />
+                    </div>
+                      <span className={`font-bold text-xs truncate ${a.correct ? 'text-green-400' : 'text-white/60'}`}>{a.username}</span>
+                      <span className={`text-xs font-bold flex-1 text-right truncate ${a.correct ? 'text-green-300' : 'text-white/30'}`}>{a.text}</span>
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+
+            {/* Friends Mode Controls */}
+            {mode === 'friends' && (
+              <div className="mt-6 flex items-center gap-6">
+                {!showAnswer ? (
+                  <button onClick={() => setShowAnswer(true)} className="flex items-center gap-3 bg-white text-black px-10 py-5 rounded-full font-black text-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(255,255,255,0.3)]">
+                    <Eye size={28} /> كشف الإجابة
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-6">
+                    <button onClick={friendsCorrect} className="flex items-center gap-3 bg-gradient-to-r from-green-500 to-green-700 text-white px-10 py-5 rounded-full font-black text-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(34,197,94,0.4)]">
+                      <Check size={28} /> صحيحة
+                    </button>
+                    <button onClick={friendsWrong} className="flex items-center gap-3 bg-gradient-to-r from-red-500 to-red-700 text-white px-10 py-5 rounded-full font-black text-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(239,68,68,0.4)]">
+                      <X size={28} /> خاطئة
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
         </div>
       </div>
     );
