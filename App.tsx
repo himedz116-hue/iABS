@@ -88,7 +88,7 @@ const App: React.FC = () => {
   const [showOBSModal, setShowOBSModal] = useState(false);
   const [showObsPreview, setShowObsPreview] = useState(false);
 
-  // Authorization State - bypass for OBS & public visitors
+  // Authorization State - bypass for OBS
   const [isAuthorized, setIsAuthorized] = useState<boolean>(() => {
     if (initialParams.obs) return true;
     try {
@@ -98,7 +98,7 @@ const App: React.FC = () => {
         return parsed.valid === true;
       }
     } catch (e) { }
-    return true;
+    return false;
   });
   const [userRole, setUserRole] = useState<'admin' | 'user'>(() => {
     try {
@@ -934,10 +934,19 @@ const App: React.FC = () => {
     >
       <OBSLinksModal isOpen={showOBSModal} onClose={() => setShowOBSModal(false)} />
       
-      {/* Render main content */}
-      <div className="relative w-full h-full flex flex-col items-center">
-        {renderContent(false)}
-      </div>
+      {!isAuthorized && currentView !== 'ABOUT' && (
+        <GlobalPasswordPage onSuccess={(role) => {
+          setUserRole(role);
+          setIsAuthorized(true);
+          setCurrentView('HOME');
+        }} />
+      )}
+
+      {(isAuthorized || currentView === 'ABOUT') && (
+        <div className="relative w-full h-full flex flex-col items-center">
+          {renderContent(false)}
+        </div>
+      )}
 
       {activeAnnouncement && (
         <GlobalAnnouncement
