@@ -136,7 +136,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onChangeV
           )}
 
           {/* Bottom Section: Game Controls */}
-          {!isHome && (
+          {!isHome && currentView !== 'MAHMAH_GAME' && (
             <div className="flex-[1.6] min-h-0 border-t border-white/5 bg-gradient-to-b from-black/70 via-red-950/5 to-black/80 backdrop-blur-3xl flex flex-col relative overflow-hidden">
               {/* Top glow line */}
               <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-red-500/40 to-transparent"></div>
