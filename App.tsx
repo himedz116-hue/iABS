@@ -29,6 +29,7 @@ import { HigherLowerGame } from './components/HigherLowerGame';
 import { MahmahGame } from './components/MahmahGame/MahmahGame';
 import { LetterHexagonGame } from './components/LetterHexagonGame';
 import { BuzzerPad } from './components/BuzzerPad';
+import { SafeCodeGame } from './components/SafeCodeGame';
 import { AboutPage } from './components/AboutPage';
 import { AdminDashboard } from './components/AdminDashboard';
 import { GlobalAnnouncement } from './components/GlobalAnnouncement';
@@ -464,6 +465,7 @@ const App: React.FC = () => {
       case 'MAHMAH_GAME': return <MahmahGame onBack={handleGoHome} />;
       case 'LETTER_GAME': return <LetterHexagonGame onHome={handleGoHome} isOBS={obsMode} onToggleOBSPreview={() => setShowObsPreview(!showObsPreview)} obsPreviewActive={showObsPreview} />;
       case 'BUZZER_PAD': return <BuzzerPad />;
+      case 'SAFE_CODE': return <SafeCodeGame onHome={handleGoHome} isOBS={obsMode} />;
       case 'ABOUT': return <AboutPage onBack={handleGoHome} />;
 
       case 'HOST_LOGIN': return (
