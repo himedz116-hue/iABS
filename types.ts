@@ -56,7 +56,6 @@ export type ViewState =
   | 'LETTER_GAME'
   | 'HIGHER_LOWER'
   | 'BUZZER_PAD'
-  | 'SAFE_CODE'
   | 'ABOUT';
 
 // Added GameType to fix import error in TournamentManager.tsx
