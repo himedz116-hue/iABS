@@ -25,6 +25,9 @@ class ChatService {
   private pendingAvatarFetches: Record<string, Promise<string>> = {};
   private currentChatroomId: number | null = null;
   
+  // Bot Server URL (optional - if set, messages are sent via bot server)
+  private botServerUrl: string | null = null;
+  
   // Kick Bot Tokens
   private KICK_BOT_ACCESS_TOKEN = "MTU4YJK4N2UTMDE1YI0ZYZY2LTHHYJYTNDQ2YJJMMWMZNJZH";
   private KICK_BOT_REFRESH_TOKEN = "MDY0MJQ4MZCTZJE3OS01OTQWLWFMZTATZMU5YJNHMGE4NZC1";
@@ -142,12 +145,6 @@ class ChatService {
           timestamp: Date.now()
         };
 
-        // ميزة تفاعل البوت التلقائية (كلمة: مرحبا)
-        const rawContent = message.content.replace(/\[emote:\d+:[^\]]*\]/gi, '').replace(/<[^>]*>/g, '').trim();
-        if ((rawContent.includes('مرحبا') || rawContent.includes('مرحباً') || rawContent.includes('هلا')) && message.user.username.toLowerCase() !== 'iabsbot') {
-            this.sendMessage(`أهلين @${message.user.username} 👋 نورت البث!`);
-        }
-
         // Safety: ensure one listener failure doesn't stop others
         this.listeners.forEach(cb => {
           try {
@@ -217,13 +214,35 @@ class ChatService {
     this.statusListeners.forEach(cb => cb(connected, error, details));
   }
 
-  // Send a message to the currently connected Kick channel using the Bot token
+  // Send a message to the currently connected Kick channel
+  // If botServerUrl is set, sends via bot server instead of direct API
   async sendMessage(content: string) {
     if (!this.currentChatroomId) {
       console.warn('[ChatService] Cannot send message: not connected to any channel.');
       return false;
     }
 
+    // If bot server is configured, use it
+    if (this.botServerUrl) {
+      try {
+        const response = await fetch(`${this.botServerUrl}/api/bot/send`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ content })
+        });
+
+        if (response.ok) {
+          console.log('[ChatService] Message sent via bot server');
+          return true;
+        }
+      } catch (e) {
+        console.warn('[ChatService] Bot server failed, falling back to direct API:', e);
+      }
+    }
+
+    // Fallback to direct API
     try {
       const response = await fetch(`/kick-api/public/v1/chatrooms/${this.currentChatroomId}/messages`, {
         method: "POST",
@@ -249,6 +268,17 @@ class ChatService {
       console.error('[ChatService] Exception while sending message:', e);
       return false;
     }
+  }
+  
+  // Set bot server URL (for connecting to external bot server)
+  setBotServerUrl(url: string | null) {
+    this.botServerUrl = url;
+    console.log(`[ChatService] Bot server URL set to: ${url || 'none (using direct API)'}`);
+  }
+  
+  // Get current bot server URL
+  getBotServerUrl() {
+    return this.botServerUrl;
   }
 
   async fetchKickAvatar(username: string): Promise<string> {

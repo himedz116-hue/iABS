@@ -219,6 +219,14 @@ const App: React.FC = () => {
   useEffect(() => {
     const channel = 'iabs'; // Forced to iabs
     console.log(`[App] Initializing Chat Connection for: ${channel}`);
+    
+    // Optional: Connect to external bot server
+    const botServerUrl = localStorage.getItem('iabs_bot_server_url') || process.env.REACT_APP_BOT_SERVER_URL || null;
+    if (botServerUrl) {
+      console.log(`[App] Connecting to bot server: ${botServerUrl}`);
+      chatService.setBotServerUrl(botServerUrl);
+    }
+    
     chatService.connect(channel);
 
     // Cleanup is not strictly necessary here as we want it persistent, 
