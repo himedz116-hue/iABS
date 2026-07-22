@@ -154,6 +154,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
   const [chatTurnOwner, setChatTurnOwner] = useState<ChatSide>('chat');
   const [chatResponder, setChatResponder] = useState<ChatSide>('chat');
   const [chatPassUsed, setChatPassUsed] = useState(false);
+  const pendingChatWinnerRef = useRef<{ username: string; avatar: string; color: string; isStreamer?: boolean } | null>(null);
   
   const chatWinnerRef = useRef(chatWinner);
   const showAnswerRef = useRef(showAnswer);
@@ -432,28 +433,8 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
       
       if (isCorrect) {
         const winner = { username: msg.user.username, avatar: msg.user.avatar || '', color: msg.user.color || '#fff' };
+        pendingChatWinnerRef.current = winner;
         setChatWinner(winner);
-        setChatScore(prev => prev + q.points);
-        
-        // Confetti!
-        confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
-        
-        setChatPlayers(prev => {
-          const existing = prev[msg.user.username] || { username: msg.user.username, avatar: msg.user.avatar || '', color: msg.user.color || '#fff', score: 0, correctAnswers: 0 };
-          return {
-            ...prev,
-            [msg.user.username]: {
-              ...existing,
-              score: existing.score + q.points,
-              correctAnswers: existing.correctAnswers + 1
-            }
-          };
-        });
-
-        // Auto close after 5 seconds
-        setTimeout(() => {
-          closeQuestion();
-        }, 5000);
       }
     });
 
@@ -501,6 +482,36 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
       return;
     }
     passChatQuestion('chat');
+  };
+
+  const chatHostConfirm = () => {
+    if (!currentQ || !pendingChatWinnerRef.current) return;
+    const winner = pendingChatWinnerRef.current;
+    setChatWinner(winner);
+    setChatScore(prev => prev + currentQ.points);
+    confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+    setChatPlayers(prev => {
+      const existing = prev[winner.username] || { username: winner.username, avatar: winner.avatar || '', color: winner.color || '#fff', score: 0, correctAnswers: 0 };
+      return {
+        ...prev,
+        [winner.username]: {
+          ...existing,
+          score: existing.score + currentQ.points,
+          correctAnswers: existing.correctAnswers + 1
+        }
+      };
+    });
+    pendingChatWinnerRef.current = null;
+    setTimeout(() => {
+      closeQuestion();
+    }, 4000);
+  };
+
+  const chatHostReject = () => {
+    if (!currentQ) return;
+    pendingChatWinnerRef.current = null;
+    setChatWinner(null);
+    setTimer(30);
   };
 
   const friendsCorrect = () => {
@@ -1044,19 +1055,24 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
                           </div>
                         </div>
 
-                        <div className="flex flex-col items-center gap-4 text-center">
-                          <div className="text-white font-black text-5xl md:text-6xl tracking-tight drop-shadow-[0_0_30px_rgba(250,204,21,0.3)]">
-                            {chatWinner.username}
-                          </div>
-                          <div className="text-yellow-100/80 font-bold text-lg md:text-xl">
-                            احتفالية خاصة بصور الستريمر الخمس
-                          </div>
-                          <div className="text-white/40 font-bold text-xs uppercase tracking-widest">✅ الإجابة الصحيحة</div>
-                          <div className="text-white font-black text-2xl md:text-3xl text-green-400 tracking-tight">{currentQ.answer}</div>
-                          <div className="inline-flex items-center justify-center rounded-2xl border border-yellow-300/40 bg-yellow-400/12 px-12 py-5 text-4xl font-black text-yellow-300 shadow-[0_0_35px_rgba(250,204,21,0.22)] md:text-5xl">
-                            +{currentQ.points}
-                          </div>
-                        </div>
+                         <div className="flex flex-col items-center gap-4 text-center">
+                           <div className="text-white font-black text-5xl md:text-6xl tracking-tight drop-shadow-[0_0_30px_rgba(250,204,21,0.3)]">
+                             {chatWinner.username}
+                           </div>
+                           <div className="text-yellow-100/80 font-bold text-lg md:text-xl">
+                             احتفالية خاصة بصور الستريمر الخمس
+                           </div>
+                           <div className="text-white/40 font-bold text-xs uppercase tracking-widest">✅ الإجابة الصحيحة</div>
+                           <div className="text-white font-black text-2xl md:text-3xl text-green-400 tracking-tight">{currentQ.answer}</div>
+                           <div className="flex flex-wrap items-center justify-center gap-4 mt-2">
+                             <button onClick={chatHostConfirm} className="group relative flex items-center gap-3 px-10 py-4 rounded-full font-black text-xl bg-gradient-to-br from-green-400 to-green-700 text-white hover:scale-105 active:scale-95 transition-all shadow-[0_0_50px_rgba(34,197,94,0.5)] border border-green-500/30">
+                               <Check size={24} /> ✅ صحيقة
+                             </button>
+                             <button onClick={chatHostReject} className="flex items-center gap-3 bg-white/10 text-white px-8 py-4 rounded-full font-black text-lg hover:bg-white/15 active:scale-95 transition-all border border-white/15">
+                               ❌ خاطئة
+                             </button>
+                           </div>
+                         </div>
                       </div>
                     </div>
                   ) : (
@@ -1068,7 +1084,14 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
                       </div>
                       <div className="text-white/40 font-bold text-xs uppercase tracking-widest mb-1">✅ الإجابة الصحيحة</div>
                       <div className="text-white font-black text-2xl md:text-3xl text-green-400 tracking-tight">{currentQ.answer}</div>
-                      <div className="text-green-400 font-black text-5xl bg-green-500/20 px-12 py-5 rounded-2xl border border-green-500/40 shadow-[0_0_30px_rgba(34,197,94,0.3)]">+{currentQ.points}</div>
+                      <div className="flex flex-wrap items-center justify-center gap-4 mt-2">
+                        <button onClick={chatHostConfirm} className="group relative flex items-center gap-3 px-10 py-4 rounded-full font-black text-xl bg-gradient-to-br from-green-400 to-green-700 text-white hover:scale-105 active:scale-95 transition-all shadow-[0_0_50px_rgba(34,197,94,0.5)] border border-green-500/30">
+                          <Check size={24} /> ✅ صحيقة
+                        </button>
+                        <button onClick={chatHostReject} className="flex items-center gap-3 bg-white/10 text-white px-8 py-4 rounded-full font-black text-lg hover:bg-white/15 active:scale-95 transition-all border border-white/15">
+                          ❌ خاطئة
+                        </button>
+                      </div>
                     </>
                   )}
                 </div>
