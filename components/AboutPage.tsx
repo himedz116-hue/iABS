@@ -568,41 +568,60 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
               <button
                 key={i}
                 onClick={() => setActiveGame(activeGame === i ? null : i)}
-                className={`text-right bg-gradient-to-br from-red-950/40 to-black/60 border border-red-500/20 rounded-[2rem] p-5 transition-all duration-500 group hover:scale-[1.02] ${
-                  activeGame === i ? 'shadow-2xl border-red-500/50 bg-red-900/40' : 'hover:border-red-500/40 hover:shadow-[0_0_30px_rgba(239,68,68,0.1)] hover:-translate-y-1'
-                }`}
+                className={`relative text-right rounded-[2rem] p-5 transition-all duration-500 group hover:scale-[1.02] overflow-hidden ${
+                  activeGame === i ? 'shadow-2xl border-red-500/80 bg-red-950/60' : 'bg-black/60 hover:bg-red-950/40 border-red-900/30 hover:border-red-500/60 hover:shadow-[0_0_40px_rgba(239,68,68,0.2)] hover:-translate-y-1'
+                } border backdrop-blur-md`}
+                style={{ 
+                  boxShadow: activeGame === i ? `0 20px 50px -10px ${game.glowColor || 'rgba(239,68,68,0.5)'}` : '0 10px 30px -10px rgba(0,0,0,0.5)',
+                }}
               >
-                {/* Pill Header */}
-                <div className="flex items-center justify-between bg-black/40 border border-red-500/10 rounded-full p-1.5 pr-6">
-                  <h3 className="text-white font-black text-lg leading-none tracking-wide drop-shadow-md">{game.name}</h3>
-                  <div
-                    className={`w-12 h-12 rounded-full bg-gradient-to-br ${game.color} flex items-center justify-center shrink-0 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-transform`}
-                  >
-                    <game.icon size={22} className="text-white drop-shadow-md" />
-                  </div>
-                </div>
+                {/* Red Diagonal Stripes Background Effect */}
+                <div 
+                  className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-500 pointer-events-none"
+                  style={{
+                    backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(239, 68, 68, 0.4) 10px, rgba(239, 68, 68, 0.4) 20px)'
+                  }}
+                />
                 
-                {/* Always visible description */}
-                <div className="mt-5 px-3">
-                  <p className="text-red-100/70 font-bold text-sm leading-relaxed line-clamp-3">
-                    {game.description}
-                  </p>
-                </div>
+                {/* Subtle Inner Glow */}
+                <div className="absolute inset-0 bg-gradient-to-t from-red-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-                {/* Expanded content */}
-                <div
-                  className={`overflow-hidden transition-all duration-500 ${
-                    activeGame === i ? 'max-h-[300px] opacity-100 mt-5' : 'max-h-0 opacity-0'
-                  }`}
-                >
-                  <div className="border-t border-red-500/10 pt-4 px-2">
-                    <div className="bg-black/40 rounded-2xl p-4 border border-red-500/10">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-red-400 font-black text-xs uppercase tracking-widest drop-shadow-sm">
-                          طريقة اللعب
-                        </span>
+                <div className="relative z-10">
+                  {/* Pill Header */}
+                  <div className="flex items-center justify-between bg-black/50 border border-red-500/20 rounded-full p-1.5 pl-6 group-hover:bg-black/70 group-hover:border-red-500/40 transition-all">
+                    <div
+                      className={`w-12 h-12 rounded-full bg-gradient-to-br ${game.color} flex items-center justify-center shrink-0 shadow-lg group-hover:scale-110 group-hover:rotate-12 transition-transform border border-white/20`}
+                    >
+                      <game.icon size={22} className="text-white drop-shadow-md" />
+                    </div>
+                    <h3 className="text-white font-black text-xl leading-none tracking-wide drop-shadow-md">{game.name}</h3>
+                  </div>
+                  
+                  {/* Always visible description */}
+                  <div className="mt-5 px-3">
+                    <p className="text-red-100/70 font-bold text-sm leading-relaxed line-clamp-3 group-hover:text-red-100 transition-colors">
+                      {game.description}
+                    </p>
+                  </div>
+
+                  {/* Expanded content */}
+                  <div
+                    className={`overflow-hidden transition-all duration-500 ${
+                      activeGame === i ? 'max-h-[300px] opacity-100 mt-5' : 'max-h-0 opacity-0'
+                    }`}
+                  >
+                    <div className="border-t border-red-500/20 pt-4 px-2">
+                      <div className="bg-black/60 rounded-2xl p-4 border border-red-500/20 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-red-500/5 blur-xl pointer-events-none" />
+                        <div className="relative z-10">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-red-400 font-black text-xs uppercase tracking-widest drop-shadow-sm">
+                              طريقة اللعب
+                            </span>
+                          </div>
+                          <p className="text-white/90 font-bold text-xs leading-relaxed">{game.howToPlay}</p>
+                        </div>
                       </div>
-                      <p className="text-white/80 font-bold text-xs leading-relaxed">{game.howToPlay}</p>
                     </div>
                   </div>
                 </div>
