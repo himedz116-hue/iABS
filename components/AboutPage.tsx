@@ -568,48 +568,52 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
               <button
                 key={i}
                 onClick={() => setActiveGame(activeGame === i ? null : i)}
-                className={`relative text-right rounded-3xl p-6 transition-all duration-700 group hover:scale-[1.03] overflow-hidden ${
-                  activeGame === i ? 'shadow-2xl border-red-500/60 bg-red-950/80' : 'bg-gradient-to-br from-[#0a0000]/90 to-[#1a0505]/90 border-red-900/30 hover:border-red-500/50 hover:shadow-[0_0_50px_rgba(239,68,68,0.2)] hover:-translate-y-2'
+                className={`relative text-right rounded-3xl p-6 transition-all duration-500 group overflow-hidden ${
+                  activeGame === i ? 'shadow-[0_0_50px_rgba(239,68,68,0.3)] border-red-500/80 bg-red-950/80 scale-[1.02]' : 'bg-[#0a0000]/90 hover:bg-[#120000]/90 border-red-900/40 hover:border-red-500/80 hover:shadow-[0_0_40px_rgba(239,68,68,0.2)] hover:-translate-y-2'
                 } border backdrop-blur-2xl`}
                 style={{ 
                   boxShadow: activeGame === i ? `0 20px 50px -10px ${game.glowColor || 'rgba(239,68,68,0.5)'}` : '0 10px 40px -10px rgba(0,0,0,0.8)',
                 }}
               >
-                {/* Completely Random Jagged/Laser Lines Background with Parallax effect */}
+                {/* Tech/Glass Lines Background */}
                 <div 
-                  className="absolute inset-0 opacity-40 group-hover:opacity-80 transition-all duration-[1500ms] pointer-events-none mix-blend-screen transform scale-100 group-hover:scale-125 group-hover:rotate-3"
+                  className="absolute inset-0 opacity-30 group-hover:opacity-70 transition-all duration-[2000ms] ease-out pointer-events-none mix-blend-screen group-hover:scale-125 group-hover:rotate-6"
                   style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg%20width%3D%27400%27%20height%3D%27400%27%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%3E%3Cg%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M20%2C120%20L107%2C45%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.54%29%27%20stroke-width%3D%270.52%27%20/%3E%3Cpath%20d%3D%27M227%2C145%20L-3%2C191%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.57%29%27%20stroke-width%3D%271.35%27%20/%3E%3Cpath%20d%3D%27M30%2C160%20L301%2C-5%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.52%29%27%20stroke-width%3D%271.40%27%20/%3E%3Cpath%20d%3D%27M436%2C131%20L303%2C374%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.48%29%27%20stroke-width%3D%271.27%27%20/%3E%3Cpath%20d%3D%27M416%2C305%20L397%2C179%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.50%29%27%20stroke-width%3D%270.63%27%20/%3E%3Cpath%20d%3D%27M415%2C297%20L393%2C389%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.36%29%27%20stroke-width%3D%271.29%27%20/%3E%3Cpath%20d%3D%27M53%2C312%20L392%2C154%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.26%29%27%20stroke-width%3D%270.92%27%20/%3E%3Cpath%20d%3D%27M254%2C402%20L209%2C108%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.34%29%27%20stroke-width%3D%271.12%27%20/%3E%3Cpath%20d%3D%27M263%2C27%20L33%2C442%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.47%29%27%20stroke-width%3D%271.49%27%20/%3E%3Cpath%20d%3D%27M448%2C314%20L381%2C231%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.58%29%27%20stroke-width%3D%270.63%27%20/%3E%3Cpath%20d%3D%27M41%2C284%20L385%2C39%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.29%29%27%20stroke-width%3D%270.30%27%20/%3E%3Cpath%20d%3D%27M220%2C82%20L208%2C440%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.44%29%27%20stroke-width%3D%270.39%27%20/%3E%3Cpath%20d%3D%27M92%2C325%20L230%2C312%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.31%29%27%20stroke-width%3D%270.12%27%20/%3E%3Cpath%20d%3D%27M239%2C99%20L255%2C207%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.30%29%27%20stroke-width%3D%271.10%27%20/%3E%3Cpath%20d%3D%27M365%2C399%20L311%2C55%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.48%29%27%20stroke-width%3D%270.50%27%20/%3E%3Cpath%20d%3D%27M273%2C159%20L391%2C299%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.11%29%27%20stroke-width%3D%270.91%27%20/%3E%3Cpath%20d%3D%27M34%2C96%20L409%2C-6%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.53%29%27%20stroke-width%3D%270.50%27%20/%3E%3Cpath%20d%3D%27M76%2C254%20L315%2C450%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.19%29%27%20stroke-width%3D%270.96%27%20/%3E%3Cpath%20d%3D%27M112%2C253%20L311%2C37%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.41%29%27%20stroke-width%3D%270.24%27%20/%3E%3Cpath%20d%3D%27M110%2C354%20L169%2C91%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.44%29%27%20stroke-width%3D%270.38%27%20/%3E%3Cpath%20d%3D%27M439%2C116%20L230%2C240%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.37%29%27%20stroke-width%3D%270.94%27%20/%3E%3Cpath%20d%3D%27M207%2C200%20L2%2C143%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.41%29%27%20stroke-width%3D%270.71%27%20/%3E%3Cpath%20d%3D%27M146%2C-32%20L298%2C377%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.32%29%27%20stroke-width%3D%270.31%27%20/%3E%3Cpath%20d%3D%27M150%2C237%20L404%2C250%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.26%29%27%20stroke-width%3D%271.07%27%20/%3E%3Cpath%20d%3D%27M348%2C95%20L419%2C333%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.20%29%27%20stroke-width%3D%270.33%27%20/%3E%3Cpath%20d%3D%27M425%2C374%20L277%2C59%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.56%29%27%20stroke-width%3D%270.13%27%20/%3E%3Cpath%20d%3D%27M104%2C123%20L94%2C145%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.17%29%27%20stroke-width%3D%270.62%27%20/%3E%3Cpath%20d%3D%27M193%2C66%20L140%2C390%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.27%29%27%20stroke-width%3D%270.44%27%20/%3E%3Cpath%20d%3D%27M450%2C135%20L31%2C316%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.42%29%27%20stroke-width%3D%270.89%27%20/%3E%3Cpath%20d%3D%27M-35%2C7%20L317%2C145%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.12%29%27%20stroke-width%3D%270.29%27%20/%3E%3Cpath%20d%3D%27M396%2C391%20L35%2C224%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.48%29%27%20stroke-width%3D%271.31%27%20/%3E%3Cpath%20d%3D%27M435%2C208%20L-9%2C157%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.53%29%27%20stroke-width%3D%270.37%27%20/%3E%3Cpath%20d%3D%27M-11%2C345%20L7%2C373%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.18%29%27%20stroke-width%3D%271.31%27%20/%3E%3Cpath%20d%3D%27M98%2C422%20L27%2C366%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.14%29%27%20stroke-width%3D%271.22%27%20/%3E%3Cpath%20d%3D%27M339%2C105%20L191%2C90%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.51%29%27%20stroke-width%3D%270.38%27%20/%3E%3Cpath%20d%3D%27M365%2C338%20L142%2C254%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.47%29%27%20stroke-width%3D%270.79%27%20/%3E%3Cpath%20d%3D%27M165%2C87%20L65%2C342%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.24%29%27%20stroke-width%3D%270.80%27%20/%3E%3Cpath%20d%3D%27M359%2C342%20L221%2C116%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.54%29%27%20stroke-width%3D%270.42%27%20/%3E%3Cpath%20d%3D%27M340%2C330%20L159%2C119%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.57%29%27%20stroke-width%3D%270.13%27%20/%3E%3Cpath%20d%3D%27M-21%2C102%20L245%2C122%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.51%29%27%20stroke-width%3D%271.08%27%20/%3E%3C/g%3E%3C/svg%3E")`,
-                    backgroundSize: '300px 300px',
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg%20width%3D%27400%27%20height%3D%27400%27%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%3E%3Cg%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M53%2C254%20L53%2C254%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.38%29%27%20stroke-width%3D%270.41%27%20/%3E%3Cpath%20d%3D%27M194%2C319%20L194%2C369%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.23%29%27%20stroke-width%3D%270.68%27%20/%3E%3Cpath%20d%3D%27M94%2C17%20L94%2C67%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.36%29%27%20stroke-width%3D%270.73%27%20/%3E%3Cpath%20d%3D%27M11%2C38%20L61%2C-12%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.19%29%27%20stroke-width%3D%270.65%27%20/%3E%3Cpath%20d%3D%27M288%2C230%20L288%2C230%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.32%29%27%20stroke-width%3D%270.75%27%20/%3E%3Cpath%20d%3D%27M105%2C135%20L105%2C135%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.30%29%27%20stroke-width%3D%270.80%27%20/%3E%3Cpath%20d%3D%27M30%2C338%20L-20%2C288%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.36%29%27%20stroke-width%3D%270.36%27%20/%3E%3Cpath%20d%3D%27M384%2C78%20L484%2C128%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.26%29%27%20stroke-width%3D%270.26%27%20/%3E%3Cpath%20d%3D%27M295%2C339%20L395%2C339%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.25%29%27%20stroke-width%3D%270.57%27%20/%3E%3Cpath%20d%3D%27M37%2C102%20L137%2C202%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.31%29%27%20stroke-width%3D%270.62%27%20/%3E%3Cpath%20d%3D%27M98%2C22%20L198%2C72%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.37%29%27%20stroke-width%3D%270.70%27%20/%3E%3Cpath%20d%3D%27M196%2C241%20L296%2C291%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.38%29%27%20stroke-width%3D%270.78%27%20/%3E%3Cpath%20d%3D%27M67%2C45%20L117%2C95%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.37%29%27%20stroke-width%3D%270.41%27%20/%3E%3Cpath%20d%3D%27M326%2C226%20L276%2C176%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.39%29%27%20stroke-width%3D%270.20%27%20/%3E%3Cpath%20d%3D%27M156%2C258%20L156%2C208%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.37%29%27%20stroke-width%3D%270.27%27%20/%3E%3Cpath%20d%3D%27M224%2C38%20L224%2C138%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.35%29%27%20stroke-width%3D%270.79%27%20/%3E%3Cpath%20d%3D%27M122%2C125%20L222%2C225%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.34%29%27%20stroke-width%3D%270.47%27%20/%3E%3Cpath%20d%3D%27M360%2C181%20L410%2C181%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.23%29%27%20stroke-width%3D%270.23%27%20/%3E%3Cpath%20d%3D%27M317%2C207%20L267%2C207%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.38%29%27%20stroke-width%3D%270.60%27%20/%3E%3Cpath%20d%3D%27M80%2C13%20L80%2C63%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.20%29%27%20stroke-width%3D%270.26%27%20/%3E%3Cpath%20d%3D%27M365%2C132%20L465%2C132%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.21%29%27%20stroke-width%3D%270.52%27%20/%3E%3Cpath%20d%3D%27M321%2C124%20L321%2C74%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.39%29%27%20stroke-width%3D%270.74%27%20/%3E%3Cpath%20d%3D%27M74%2C87%20L174%2C87%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.19%29%27%20stroke-width%3D%270.73%27%20/%3E%3Cpath%20d%3D%27M298%2C95%20L348%2C195%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.10%29%27%20stroke-width%3D%270.64%27%20/%3E%3Cpath%20d%3D%27M276%2C97%20L376%2C47%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.20%29%27%20stroke-width%3D%270.29%27%20/%3E%3Cpath%20d%3D%27M79%2C201%20L79%2C201%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.15%29%27%20stroke-width%3D%270.26%27%20/%3E%3Cpath%20d%3D%27M166%2C113%20L166%2C213%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.29%29%27%20stroke-width%3D%270.20%27%20/%3E%3Cpath%20d%3D%27M370%2C90%20L420%2C190%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.15%29%27%20stroke-width%3D%270.52%27%20/%3E%3Cpath%20d%3D%27M323%2C118%20L273%2C168%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.23%29%27%20stroke-width%3D%270.68%27%20/%3E%3Cpath%20d%3D%27M128%2C160%20L78%2C260%27%20stroke%3D%27rgba%28239%2C68%2C68%2C0.32%29%27%20stroke-width%3D%270.40%27%20/%3E%3C/g%3E%3C/svg%3E")`,
+                    backgroundSize: '250px 250px',
                     backgroundPosition: activeGame === i ? 'center' : 'top left'
                   }}
                 />
                 
-                {/* Extra glow blob on hover */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-red-600/20 blur-[60px] opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none rounded-full" />
+                {/* Hover Spotlight Effect */}
+                <div className="absolute -inset-full bg-gradient-to-tr from-transparent via-red-500/10 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-spin-slow pointer-events-none rounded-full" />
+                
+                {/* Center Glow Blob */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-red-600/20 blur-[80px] opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none rounded-full" />
 
-                {/* Glass Top Highlight */}
-                <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-white/[0.04] via-white/[0.01] to-transparent pointer-events-none rounded-t-3xl" />
-
-                {/* Subtle Inner Glow */}
-                <div className="absolute inset-0 bg-gradient-to-t from-red-600/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                {/* Glass Edge Highlight */}
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-red-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-white/[0.05] via-white/[0.01] to-transparent pointer-events-none rounded-t-3xl" />
 
                 <div className="relative z-10">
-                  {/* Pill Header */}
-                  <div className="flex items-center justify-between bg-black/60 border border-red-500/20 rounded-full p-2 pl-6 group-hover:bg-black/80 group-hover:border-red-500/60 transition-all duration-500 shadow-inner overflow-hidden relative">
+                  {/* Pill Header: Changed justify-between to gap-4 to keep icon and text together on the right */}
+                  <div className="flex items-center gap-4 bg-black/60 border border-red-500/20 rounded-full p-2 pr-2 group-hover:bg-black/80 group-hover:border-red-500/60 transition-all duration-500 shadow-inner overflow-hidden relative">
                     {/* Shine effect on pill */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-1000 skew-x-[-20deg] pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/20 to-transparent -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-1000 skew-x-[-20deg] pointer-events-none" />
                     
+                    {/* Icon */}
                     <div
                       className={`w-12 h-12 rounded-full bg-gradient-to-br ${game.color} flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(0,0,0,0.5)] group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-500 border border-white/20 relative z-10`}
                     >
                       <game.icon size={22} className="text-white drop-shadow-[0_2px_5px_rgba(0,0,0,0.5)]" />
                     </div>
-                    <h3 className="text-white font-black text-xl leading-none tracking-wider drop-shadow-lg relative z-10">{game.name}</h3>
+                    
+                    {/* Text */}
+                    <h3 className="text-white font-black text-xl leading-none tracking-wider drop-shadow-lg relative z-10 whitespace-nowrap">{game.name}</h3>
                   </div>
                   
                   {/* Always visible description */}
-                  <div className="mt-6 px-2">
+                  <div className="mt-6 px-2 text-right">
                     <p className="text-red-100/60 font-bold text-sm leading-loose line-clamp-3 group-hover:text-red-50 transition-colors duration-300 drop-shadow-sm">
                       {game.description}
                     </p>
@@ -622,10 +626,10 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
                     }`}
                   >
                     <div className="border-t border-red-500/20 pt-5 px-1">
-                      <div className="bg-[#050000]/80 rounded-2xl p-4 border border-red-500/10 relative overflow-hidden shadow-inner group-hover:border-red-500/30 transition-colors duration-500">
-                        <div className="absolute inset-0 bg-red-500/5 blur-2xl pointer-events-none" />
+                      <div className="bg-[#050000]/90 rounded-2xl p-4 border border-red-500/20 relative overflow-hidden shadow-inner group-hover:border-red-500/40 transition-colors duration-500 text-right">
+                        <div className="absolute inset-0 bg-red-500/10 blur-2xl pointer-events-none" />
                         <div className="relative z-10">
-                          <div className="flex items-center gap-2 mb-3">
+                          <div className="flex items-center justify-start gap-2 mb-3">
                             <span className="text-red-500 font-black text-xs uppercase tracking-[0.2em] drop-shadow-md">
                               طريقة اللعب
                             </span>
