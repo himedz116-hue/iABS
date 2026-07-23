@@ -29,6 +29,10 @@ import { HigherLowerGame } from './components/HigherLowerGame';
 import { MahmahGame } from './components/MahmahGame/MahmahGame';
 import { LetterHexagonGame } from './components/LetterHexagonGame';
 import { BuzzerPad } from './components/BuzzerPad';
+import { SafeCode } from './components/SafeCode';
+import { MapGuesser } from './components/MapGuesser';
+import { HardeesMemory } from './components/HardeesMemory';
+import { HardeesAdPopup } from './components/HardeesAdPopup';
 import { AboutPage } from './components/AboutPage';
 import { AdminDashboard } from './components/AdminDashboard';
 import { GlobalAnnouncement } from './components/GlobalAnnouncement';
@@ -472,6 +476,9 @@ const App: React.FC = () => {
       case 'MAHMAH_GAME': return <MahmahGame onBack={handleGoHome} />;
       case 'LETTER_GAME': return <LetterHexagonGame onHome={handleGoHome} isOBS={obsMode} onToggleOBSPreview={() => setShowObsPreview(!showObsPreview)} obsPreviewActive={showObsPreview} />;
       case 'BUZZER_PAD': return <BuzzerPad />;
+      case 'SAFE_CODE': return <SafeCode onHome={() => setCurrentView('HOME')} isOBS={isOBSMode} />;
+      case 'MAP_GUESSER': return <MapGuesser onHome={() => setCurrentView('HOME')} isOBS={isOBSMode} />;
+      case 'HARDEES_MEMORY': return <HardeesMemory onHome={() => setCurrentView('HOME')} isOBS={isOBSMode} />;
       case 'ABOUT': return <AboutPage onBack={handleGoHome} />;
 
       case 'HOST_LOGIN': return (
@@ -675,11 +682,11 @@ const App: React.FC = () => {
                             perspective: '800px'
                           }}>
                           <PremiumGameButton
-                            title={game.title}
+                            title={game.view_id === 'HARDEES_MEMORY' ? '' : game.title}
                             icon={ICON_MAP[game.icon_name] || Sparkles}
-                              imageUrl={game.view_id === 'LETTER_GAME' ? '/photo/image76.png' : game.view_id === 'HIGHER_LOWER' ? '/photo/content.png' : undefined}
-                              imageScale={game.view_id === 'HIGHER_LOWER' ? 'scale-[2.5]' : 'scale-[1.2]'}
-                              imageContainerClass={game.view_id === 'HIGHER_LOWER' ? 'w-7 h-7 translate-x-2' : undefined}
+                              imageUrl={game.view_id === 'LETTER_GAME' ? '/photo/image76.png' : game.view_id === 'HIGHER_LOWER' ? '/photo/content.png' : game.view_id === 'HARDEES_MEMORY' ? '/908765436789.png' : undefined}
+                              imageScale={game.view_id === 'HIGHER_LOWER' ? 'scale-[2.5]' : game.view_id === 'HARDEES_MEMORY' ? 'scale-[3.5] translate-x-[25%]' : 'scale-[1.2]'}
+                              imageContainerClass={game.view_id === 'HIGHER_LOWER' ? 'w-7 h-7 translate-x-2' : game.view_id === 'HARDEES_MEMORY' ? 'w-8 h-8' : undefined}
                               isPrimary
                             onClick={() => setCurrentView(game.view_id)}
                             index={idx}
@@ -708,11 +715,11 @@ const App: React.FC = () => {
                             perspective: '800px'
                           }}>
                           <PremiumGameButton
-                            title={game.title}
+                            title={game.view_id === 'HARDEES_MEMORY' ? '' : game.title}
                             icon={ICON_MAP[game.icon_name] || Sparkles}
-                              imageUrl={game.view_id === 'LETTER_GAME' ? '/photo/image76.png' : game.view_id === 'HIGHER_LOWER' ? '/photo/content.png' : undefined}
-                              imageScale={game.view_id === 'HIGHER_LOWER' ? 'scale-[2.5]' : 'scale-[1.2]'}
-                              imageContainerClass={game.view_id === 'HIGHER_LOWER' ? 'w-7 h-7 translate-x-2' : undefined}
+                              imageUrl={game.view_id === 'LETTER_GAME' ? '/photo/image76.png' : game.view_id === 'HIGHER_LOWER' ? '/photo/content.png' : game.view_id === 'HARDEES_MEMORY' ? '/908765436789.png' : undefined}
+                              imageScale={game.view_id === 'HIGHER_LOWER' ? 'scale-[2.5]' : game.view_id === 'HARDEES_MEMORY' ? 'scale-[3.5] translate-x-[25%]' : 'scale-[1.2]'}
+                              imageContainerClass={game.view_id === 'HIGHER_LOWER' ? 'w-7 h-7 translate-x-2' : game.view_id === 'HARDEES_MEMORY' ? 'w-8 h-8' : undefined}
                               isPrimary
                             onClick={() => setCurrentView(game.view_id)}
                             index={0}
@@ -737,11 +744,11 @@ const App: React.FC = () => {
                             perspective: '600px'
                           }}>
                           <PremiumGameButton
-                            title={game.title}
+                            title={game.view_id === 'HARDEES_MEMORY' ? '' : game.title}
                             icon={ICON_MAP[game.icon_name] || Sparkles}
-                              imageUrl={game.view_id === 'LETTER_GAME' ? '/photo/image76.png' : game.view_id === 'HIGHER_LOWER' ? '/photo/content.png' : undefined}
-                              imageScale={game.view_id === 'HIGHER_LOWER' ? 'scale-[2.5]' : 'scale-[1.2]'}
-                              imageContainerClass={game.view_id === 'HIGHER_LOWER' ? 'w-7 h-7 translate-x-2' : undefined}
+                              imageUrl={game.view_id === 'LETTER_GAME' ? '/photo/image76.png' : game.view_id === 'HIGHER_LOWER' ? '/photo/content.png' : game.view_id === 'HARDEES_MEMORY' ? '/908765436789.png' : undefined}
+                              imageScale={game.view_id === 'HIGHER_LOWER' ? 'scale-[2.5]' : game.view_id === 'HARDEES_MEMORY' ? 'scale-[3.5] translate-x-[25%]' : 'scale-[1.2]'}
+                              imageContainerClass={game.view_id === 'HIGHER_LOWER' ? 'w-7 h-7 translate-x-2' : game.view_id === 'HARDEES_MEMORY' ? 'w-8 h-8' : undefined}
                               isPrimary
                             onClick={() => setCurrentView(game.view_id)}
                             index={idx + 1}
@@ -766,11 +773,11 @@ const App: React.FC = () => {
                             perspective: '600px'
                           }}>
                           <PremiumGameButton
-                            title={game.title}
+                            title={game.view_id === 'HARDEES_MEMORY' ? '' : game.title}
                             icon={ICON_MAP[game.icon_name] || Sparkles}
-                              imageUrl={game.view_id === 'LETTER_GAME' ? '/photo/image76.png' : game.view_id === 'HIGHER_LOWER' ? '/photo/content.png' : undefined}
-                              imageScale={game.view_id === 'HIGHER_LOWER' ? 'scale-[2.5]' : 'scale-[1.2]'}
-                              imageContainerClass={game.view_id === 'HIGHER_LOWER' ? 'w-7 h-7 translate-x-2' : undefined}
+                              imageUrl={game.view_id === 'LETTER_GAME' ? '/photo/image76.png' : game.view_id === 'HIGHER_LOWER' ? '/photo/content.png' : game.view_id === 'HARDEES_MEMORY' ? '/908765436789.png' : undefined}
+                              imageScale={game.view_id === 'HIGHER_LOWER' ? 'scale-[2.5]' : game.view_id === 'HARDEES_MEMORY' ? 'scale-[3.5] translate-x-[25%]' : 'scale-[1.2]'}
+                              imageContainerClass={game.view_id === 'HIGHER_LOWER' ? 'w-7 h-7 translate-x-2' : game.view_id === 'HARDEES_MEMORY' ? 'w-8 h-8' : undefined}
                               isPrimary
                             onClick={() => setCurrentView(game.view_id)}
                             index={idx + 3}
@@ -814,11 +821,11 @@ const App: React.FC = () => {
                       perspective: '500px'
                     }}>
                     <PremiumGameButton
-                      title={game.title}
+                      title={game.view_id === 'HARDEES_MEMORY' ? '' : game.title}
                       icon={ICON_MAP[game.icon_name] || Sparkles}
-                      imageUrl={game.view_id === 'LETTER_GAME' ? '/photo/image76.png' : game.view_id === 'HIGHER_LOWER' ? '/photo/content.png' : undefined}
-                      imageScale={game.view_id === 'HIGHER_LOWER' ? 'scale-[2.5]' : 'scale-[1.3]'}
-                      imageContainerClass={game.view_id === 'HIGHER_LOWER' ? 'w-7 h-7 translate-x-2' : undefined}
+                      imageUrl={game.view_id === 'LETTER_GAME' ? '/photo/image76.png' : game.view_id === 'HIGHER_LOWER' ? '/photo/content.png' : game.view_id === 'HARDEES_MEMORY' ? '/908765436789.png' : undefined}
+                      imageScale={game.view_id === 'HIGHER_LOWER' ? 'scale-[2.5]' : game.view_id === 'HARDEES_MEMORY' ? 'scale-[3.5] translate-x-[25%]' : 'scale-[1.3]'}
+                      imageContainerClass={game.view_id === 'HIGHER_LOWER' ? 'w-7 h-7 translate-x-2' : game.view_id === 'HARDEES_MEMORY' ? 'w-8 h-8' : undefined}
                       onClick={() => setCurrentView(game.view_id)}
                       isComingSoon={game.is_coming_soon}
                       comingSoonText={game.coming_soon_text}
@@ -976,6 +983,8 @@ const App: React.FC = () => {
           onClose={() => setActiveAnnouncement(null)}
         />
       )}
+
+      <HardeesAdPopup />
     </Layout>
   );
 };
