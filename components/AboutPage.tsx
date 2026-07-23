@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   Trophy, Sparkles, Users2, Zap, ArrowUp, ArrowDown, Flag, Keyboard,
   Swords, Gift, Brain, Vote, Bomb, Type, Flame, Smile, Coffee,
@@ -12,8 +12,8 @@ interface AboutPageProps {
 
 const GAMES_DATA = [
   {
-    name: 'محمة',
-    nameEn: 'MAHMAH',
+    name: 'محمح',
+    nameEn: 'MHMH',
     icon: Brain,
     color: 'from-indigo-500 to-purple-600',
     borderColor: 'border-indigo-500/30',
@@ -230,6 +230,46 @@ const GAMES_DATA = [
     glowColor: 'rgba(250,204,21,0.4)',
     description: 'فك شفرة الإيموجيات! مجموعة إيموجيات تمثل كلمة أو جملة، خمنها!',
     howToPlay: 'شوف الإيموجيات واكتب الكلمة أو الجملة التي تمثلها في الشات.',
+  },
+  {
+    name: 'الكلمات الممنوعة',
+    nameEn: 'FORBIDDEN WORDS',
+    icon: Flame,
+    color: 'from-red-500 to-rose-600',
+    borderColor: 'border-red-500/30',
+    glowColor: 'rgba(239,68,68,0.4)',
+    description: 'لعبة حماسية! حاول تشرح الكلمة لفريقك بدون ما تقول الكلمات الممنوعة.',
+    howToPlay: 'اشرح الكلمة المطلوبة بدون استخدام الكلمات الموجودة في القائمة الممنوعة.',
+  },
+  {
+    name: 'لعبة الحروف',
+    nameEn: 'LETTER HEXAGON',
+    icon: Type,
+    color: 'from-blue-500 to-indigo-600',
+    borderColor: 'border-blue-500/30',
+    glowColor: 'rgba(59,130,246,0.4)',
+    description: 'تحدي الحروف السريع! كوّن كلمات من الحروف المعروضة أمامك بأسرع وقت.',
+    howToPlay: 'استخدم الحروف المتاحة في الخلايا لتكوين كلمات صحيحة.',
+  },
+  {
+    name: 'تحدي الفرق',
+    nameEn: 'TEAM BATTLE',
+    icon: Swords,
+    color: 'from-orange-500 to-red-500',
+    borderColor: 'border-orange-500/30',
+    glowColor: 'rgba(249,115,22,0.4)',
+    description: 'معركة حامية بين الفرق! اجمع النقاط لفريقك واهزم الفريق الخصم.',
+    howToPlay: 'انضم لفريق وجاوب بسرعة لتكسب نقاط وتتفوق على الفريق الثاني.',
+  },
+  {
+    name: 'السحب',
+    nameEn: 'RAFFLE',
+    icon: Gift,
+    color: 'from-emerald-400 to-green-500',
+    borderColor: 'border-emerald-400/30',
+    glowColor: 'rgba(52,211,153,0.4)',
+    description: 'نظام سحوبات متقدم لاختيار الفائزين من الشات بكل عدل وشفافية.',
+    howToPlay: 'اكتب كلمة السحب في الشات لتدخل في السحب العشوائي.',
   },
 ];
 
@@ -523,47 +563,46 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
             <div className="h-1 w-20 mx-auto bg-gradient-to-r from-transparent via-red-500 to-transparent mt-4" />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {GAMES_DATA.map((game, i) => (
               <button
                 key={i}
                 onClick={() => setActiveGame(activeGame === i ? null : i)}
-                className={`text-right bg-white/[0.02] border rounded-2xl p-5 transition-all duration-500 group hover:scale-[1.02] ${
-                  activeGame === i
-                    ? `${game.borderColor} bg-white/[0.05]`
-                    : 'border-white/5 hover:border-white/10'
+                className={`text-right bg-gradient-to-br from-red-950/40 to-black/60 border border-red-500/20 rounded-[2rem] p-5 transition-all duration-500 group hover:scale-[1.02] ${
+                  activeGame === i ? 'shadow-2xl border-red-500/50 bg-red-900/40' : 'hover:border-red-500/40 hover:shadow-[0_0_30px_rgba(239,68,68,0.1)] hover:-translate-y-1'
                 }`}
               >
-                <div className="flex items-start gap-4">
+                {/* Pill Header */}
+                <div className="flex items-center justify-between bg-black/40 border border-red-500/10 rounded-full p-1.5 pr-6">
+                  <h3 className="text-white font-black text-lg leading-none tracking-wide drop-shadow-md">{game.name}</h3>
                   <div
-                    className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${game.color} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform shadow-lg`}
+                    className={`w-12 h-12 rounded-full bg-gradient-to-br ${game.color} flex items-center justify-center shrink-0 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-transform`}
                   >
-                    <game.icon size={22} className="text-white" />
+                    <game.icon size={22} className="text-white drop-shadow-md" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-white font-black text-base mb-0.5">{game.name}</h3>
-                    <span className="text-white/20 font-bold text-[10px] uppercase tracking-widest">
-                      {game.nameEn}
-                    </span>
-                  </div>
+                </div>
+                
+                {/* Always visible description */}
+                <div className="mt-5 px-3">
+                  <p className="text-red-100/70 font-bold text-sm leading-relaxed line-clamp-3">
+                    {game.description}
+                  </p>
                 </div>
 
                 {/* Expanded content */}
                 <div
                   className={`overflow-hidden transition-all duration-500 ${
-                    activeGame === i ? 'max-h-[300px] opacity-100 mt-4' : 'max-h-0 opacity-0'
+                    activeGame === i ? 'max-h-[300px] opacity-100 mt-5' : 'max-h-0 opacity-0'
                   }`}
                 >
-                  <div className="border-t border-white/5 pt-4 space-y-3">
-                    <p className="text-white/50 font-bold text-sm leading-relaxed">{game.description}</p>
-                    <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <Gamepad2 size={14} className="text-red-500" />
-                        <span className="text-red-500 font-black text-xs uppercase tracking-widest">
+                  <div className="border-t border-red-500/10 pt-4 px-2">
+                    <div className="bg-black/40 rounded-2xl p-4 border border-red-500/10">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-red-400 font-black text-xs uppercase tracking-widest drop-shadow-sm">
                           طريقة اللعب
                         </span>
                       </div>
-                      <p className="text-white/40 font-bold text-xs leading-relaxed">{game.howToPlay}</p>
+                      <p className="text-white/80 font-bold text-xs leading-relaxed">{game.howToPlay}</p>
                     </div>
                   </div>
                 </div>
