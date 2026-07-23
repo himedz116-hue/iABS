@@ -351,7 +351,7 @@ const App: React.FC = () => {
   };
 
   const PremiumGameButton = ({
-    title, icon: Icon, imageUrl, onClick, isPrimary = false, isComingSoon = false,
+    title, icon: Icon, imageUrl, imageScale = "scale-[1.2]", imageContainerClass, onClick, isPrimary = false, isComingSoon = false,
     comingSoonText = "قريباً", hasOBS = false, index, total,
     onMoveUp, onMoveDown, isEditMode, isVisible = true, onToggleVisibility, onToggleSize
   }: any) => {
@@ -382,13 +382,13 @@ const App: React.FC = () => {
           )}
 
           <div className="relative z-30 flex-shrink-0 transition-all duration-500 transform group-hover:scale-110 group-hover:rotate-6 flex items-center justify-center">
-            <div className={`relative ${isPrimary ? 'w-7 h-7' : 'w-6 h-6'} flex items-center justify-center ${isComingSoon ? 'opacity-30' : ''}`}>
+            <div className={`relative ${imageContainerClass ? imageContainerClass : (isPrimary ? 'w-7 h-7' : 'w-6 h-6')} flex items-center justify-center ${isComingSoon ? 'opacity-30' : ''}`}>
               {imageUrl ? (
-                <div className="bg-white/90 rounded-md p-0.5 w-full h-full flex items-center justify-center shadow-inner border border-white/20">
-                  <img src={imageUrl} alt={title} className="w-full h-full object-contain drop-shadow-sm" />
+                <div className="w-full h-full flex items-center justify-center">
+                  <img src={imageUrl} alt={title} className={`w-full h-full object-contain drop-shadow-sm ${imageScale}`} />
                 </div>
               ) : (
-                <Icon size={isPrimary ? 20 : 16} color="#FFFFFF" strokeWidth={2.5} className="drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
+                <Icon size={isPrimary ? 26 : 16} color="#FFFFFF" strokeWidth={2.5} className="drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
               )}
             </div>
           </div>
@@ -677,7 +677,10 @@ const App: React.FC = () => {
                           <PremiumGameButton
                             title={game.title}
                             icon={ICON_MAP[game.icon_name] || Sparkles}
-                            isPrimary
+                              imageUrl={game.view_id === 'LETTER_GAME' ? '/photo/image76.png' : game.view_id === 'HIGHER_LOWER' ? '/photo/content.png' : undefined}
+                              imageScale={game.view_id === 'HIGHER_LOWER' ? 'scale-[2.5]' : 'scale-[1.2]'}
+                              imageContainerClass={game.view_id === 'HIGHER_LOWER' ? 'w-7 h-7 translate-x-2' : undefined}
+                              isPrimary
                             onClick={() => setCurrentView(game.view_id)}
                             index={idx}
                             total={games.length}
@@ -707,7 +710,10 @@ const App: React.FC = () => {
                           <PremiumGameButton
                             title={game.title}
                             icon={ICON_MAP[game.icon_name] || Sparkles}
-                            isPrimary
+                              imageUrl={game.view_id === 'LETTER_GAME' ? '/photo/image76.png' : game.view_id === 'HIGHER_LOWER' ? '/photo/content.png' : undefined}
+                              imageScale={game.view_id === 'HIGHER_LOWER' ? 'scale-[2.5]' : 'scale-[1.2]'}
+                              imageContainerClass={game.view_id === 'HIGHER_LOWER' ? 'w-7 h-7 translate-x-2' : undefined}
+                              isPrimary
                             onClick={() => setCurrentView(game.view_id)}
                             index={0}
                             total={games.length}
@@ -733,7 +739,10 @@ const App: React.FC = () => {
                           <PremiumGameButton
                             title={game.title}
                             icon={ICON_MAP[game.icon_name] || Sparkles}
-                            isPrimary
+                              imageUrl={game.view_id === 'LETTER_GAME' ? '/photo/image76.png' : game.view_id === 'HIGHER_LOWER' ? '/photo/content.png' : undefined}
+                              imageScale={game.view_id === 'HIGHER_LOWER' ? 'scale-[2.5]' : 'scale-[1.2]'}
+                              imageContainerClass={game.view_id === 'HIGHER_LOWER' ? 'w-7 h-7 translate-x-2' : undefined}
+                              isPrimary
                             onClick={() => setCurrentView(game.view_id)}
                             index={idx + 1}
                             total={games.length}
@@ -759,7 +768,10 @@ const App: React.FC = () => {
                           <PremiumGameButton
                             title={game.title}
                             icon={ICON_MAP[game.icon_name] || Sparkles}
-                            isPrimary
+                              imageUrl={game.view_id === 'LETTER_GAME' ? '/photo/image76.png' : game.view_id === 'HIGHER_LOWER' ? '/photo/content.png' : undefined}
+                              imageScale={game.view_id === 'HIGHER_LOWER' ? 'scale-[2.5]' : 'scale-[1.2]'}
+                              imageContainerClass={game.view_id === 'HIGHER_LOWER' ? 'w-7 h-7 translate-x-2' : undefined}
+                              isPrimary
                             onClick={() => setCurrentView(game.view_id)}
                             index={idx + 3}
                             total={games.length}
@@ -804,7 +816,9 @@ const App: React.FC = () => {
                     <PremiumGameButton
                       title={game.title}
                       icon={ICON_MAP[game.icon_name] || Sparkles}
-                      imageUrl={game.view_id === 'LETTER_GAME' ? '/photo/image76.png' : undefined}
+                      imageUrl={game.view_id === 'LETTER_GAME' ? '/photo/image76.png' : game.view_id === 'HIGHER_LOWER' ? '/photo/content.png' : undefined}
+                      imageScale={game.view_id === 'HIGHER_LOWER' ? 'scale-[2.5]' : 'scale-[1.3]'}
+                      imageContainerClass={game.view_id === 'HIGHER_LOWER' ? 'w-7 h-7 translate-x-2' : undefined}
                       onClick={() => setCurrentView(game.view_id)}
                       isComingSoon={game.is_coming_soon}
                       comingSoonText={game.coming_soon_text}
@@ -967,3 +981,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+

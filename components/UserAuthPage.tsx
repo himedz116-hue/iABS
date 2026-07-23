@@ -374,7 +374,7 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
                                         ) : null}
                                     </div>
                                     {kickAvatar && (
-                                        <div className="absolute -bottom-1 -right-1 w-5 h-5 md:w-6 md:h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-black z-20">
+                                        <div className="absolute -bottom-1 -right-1 w-5 h-5 md:w-6 md:h-6 bg-red-500 rounded-full flex items-center justify-center border-2 border-black z-20">
                                             <CheckCircle size={10} className="text-black" />
                                         </div>
                                     )}
@@ -399,7 +399,7 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
                         {/* Kick Username */}
                         <div>
                             <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 block flex items-center gap-2">
-                                <span className="text-green-400">K</span> حساب Kick <span className="text-red-400">*مطلوب</span>
+                                <span className="text-red-400">K</span> حساب Kick <span className="text-red-400">*مطلوب</span>
                             </label>
                             <div className="relative">
                                 <input
@@ -408,11 +408,11 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
                                     value={kickUsername}
                                     onChange={e => setKickUsername(e.target.value)}
                                     placeholder="اسم المستخدم في Kick"
-                                    className="w-full bg-black/40 border border-white/10 focus:border-green-500/50 rounded-xl px-4 py-3 text-white font-bold text-sm outline-none transition-all placeholder:text-gray-600 pl-12"
+                                    className="w-full bg-black/40 border border-white/10 focus:border-red-500/50 rounded-xl px-4 py-3 text-white font-bold text-sm outline-none transition-all placeholder:text-gray-600 pl-12"
                                     dir="ltr"
                                 />
                                 <div className="absolute left-3 top-1/2 -translate-y-1/2">
-                                    <span className="text-green-500 font-black text-xs bg-green-500/10 px-2 py-1 rounded-lg border border-green-500/20">K</span>
+                                    <span className="text-red-500 font-black text-xs bg-red-500/10 px-2 py-1 rounded-lg border border-red-500/20">K</span>
                                 </div>
                             </div>
                             {avatarError && kickUsername.length >= 2 && (
@@ -490,9 +490,9 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
                                             onFocus={e => e.target.select()}
                                             className={`
                                                 w-10 h-12 md:w-11 md:h-14 bg-black/60 border-2 rounded-xl text-center text-lg md:text-xl font-black text-white
-                                                focus:outline-none focus:border-green-500 focus:shadow-[0_0_15px_rgba(34,197,94,0.3)]
+                                                focus:outline-none focus:border-red-500 focus:shadow-[0_0_15px_rgba(34,197,94,0.3)]
                                                 transition-all duration-200
-                                                ${digit ? 'border-green-500/40' : 'border-white/10'}
+                                                ${digit ? 'border-red-500/40' : 'border-white/10'}
                                             `}
                                         />
                                     ))}
@@ -534,13 +534,13 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
             {step === 'KICK_VERIFY' && (
                 <div className="relative z-10 w-full max-w-lg mx-auto px-6 slide-up">
                     <div className="text-center mb-8">
-                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-green-600/20 to-green-900/20 border border-green-500/20 mb-5 float-anim">
-                            <MessageSquare size={36} className="text-green-500" />
+                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-red-600/20 to-red-900/20 border border-red-500/20 mb-5 float-anim">
+                            <MessageSquare size={36} className="text-red-500" />
                         </div>
                         <h1 className="text-4xl md:text-5xl font-black italic tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-neutral-400 mb-2">
                             مصادقة Kick
                         </h1>
-                        <p className="text-green-500 font-bold tracking-[0.3em] text-[10px] uppercase">KICK CHAT VERIFICATION</p>
+                        <p className="text-red-500 font-bold tracking-[0.3em] text-[10px] uppercase">KICK CHAT VERIFICATION</p>
                     </div>
 
                     <div className="bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-[2rem] p-6 md:p-8 shadow-2xl space-y-6">
@@ -557,37 +557,37 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
                         </div>
 
                         {/* Instructions */}
-                        <div className="bg-gradient-to-br from-green-900/20 to-green-950/20 border border-green-500/20 rounded-2xl p-5 space-y-4">
-                            <h3 className="text-green-400 font-black text-sm flex items-center gap-2 uppercase tracking-widest">
+                        <div className="bg-gradient-to-br from-red-900/20 to-red-950/20 border border-red-500/20 rounded-2xl p-5 space-y-4">
+                            <h3 className="text-red-400 font-black text-sm flex items-center gap-2 uppercase tracking-widest">
                                 <Shield size={14} /> خطوات التحقق
                             </h3>
                             <div className="space-y-3 text-sm">
                                 <div className="flex items-start gap-3">
-                                    <span className="w-6 h-6 bg-green-500 text-black rounded-lg flex items-center justify-center font-black text-xs shrink-0">1</span>
+                                    <span className="w-6 h-6 bg-red-500 text-black rounded-lg flex items-center justify-center font-black text-xs shrink-0">1</span>
                                     <span className="text-gray-300 font-bold">افتح شات القناة في Kick</span>
                                 </div>
                                 <div className="flex items-start gap-3">
-                                    <span className="w-6 h-6 bg-green-500 text-black rounded-lg flex items-center justify-center font-black text-xs shrink-0">2</span>
+                                    <span className="w-6 h-6 bg-red-500 text-black rounded-lg flex items-center justify-center font-black text-xs shrink-0">2</span>
                                     <span className="text-gray-300 font-bold">أرسل الكود التالي بالضبط:</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Verification Code Display */}
-                        <div className="bg-black/60 border-2 border-green-500/30 rounded-2xl p-6 text-center glow-pulse relative overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent"></div>
+                        <div className="bg-black/60 border-2 border-red-500/30 rounded-2xl p-6 text-center glow-pulse relative overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-transparent"></div>
 
-                            <p className="text-green-500/60 text-[10px] font-bold uppercase tracking-[0.5em] mb-3 relative z-10">كـود الـتـحـقـق</p>
+                            <p className="text-red-500/60 text-[10px] font-bold uppercase tracking-[0.5em] mb-3 relative z-10">كـود الـتـحـقـق</p>
                             <div className="relative z-10 flex items-center justify-center gap-1" dir="ltr">
                                 <span className="text-red-500 font-black text-2xl md:text-4xl tracking-widest">ABS-</span>
                                 <span className="text-white font-black text-2xl md:text-4xl tracking-[0.3em] code-flash font-mono">{verificationCode}</span>
                             </div>
                             {/* Copy Button */}
-                            <button onClick={handleCopyCode} className={`mt-4 relative z-10 inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all ${codeCopied ? 'bg-green-500/20 border border-green-500/40 text-green-400' : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'}`}>
+                            <button onClick={handleCopyCode} className={`mt-4 relative z-10 inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all ${codeCopied ? 'bg-red-500/20 border border-red-500/40 text-red-400' : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'}`}>
                                 {codeCopied ? <><ClipboardCheck size={14} /> تم النسخ!</> : <><Copy size={14} /> نسخ الكود</>}
                             </button>
                             <div className="mt-3 flex items-center justify-center gap-2 relative z-10">
-                                <div className={`w-2 h-2 rounded-full ${codeExpiry > 30 ? 'bg-green-500' : codeExpiry > 0 ? 'bg-yellow-500 animate-ping' : 'bg-red-500'}`}></div>
+                                <div className={`w-2 h-2 rounded-full ${codeExpiry > 30 ? 'bg-red-500' : codeExpiry > 0 ? 'bg-yellow-500 animate-ping' : 'bg-red-500'}`}></div>
                                 <span className={`font-mono font-bold text-sm ${codeExpiry <= 30 ? 'text-yellow-400' : 'text-gray-500'}`}>
                                     {Math.floor(codeExpiry / 60)}:{(codeExpiry % 60).toString().padStart(2, '0')}
                                 </span>
@@ -598,7 +598,7 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
                         <div className="flex items-center justify-center gap-3 py-2">
                             {chatConnected ? (
                                 <>
-                                    <Loader2 size={18} className="animate-spin text-green-500" />
+                                    <Loader2 size={18} className="animate-spin text-red-500" />
                                     <span className="text-gray-400 font-bold text-sm">متصل - بانتظار الرسالة في الشات...</span>
                                 </>
                             ) : (
@@ -623,13 +623,13 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
             {step === 'VERIFYING' && (
                 <div className="relative z-10 flex flex-col items-center justify-center slide-up text-center">
                     <div className="relative mb-8">
-                        <div className="absolute inset-0 bg-green-500/20 blur-[80px] rounded-full animate-pulse"></div>
-                        <div className="relative w-32 h-32 rounded-full border-4 border-green-500/50 flex items-center justify-center bg-black/60 backdrop-blur-xl">
-                            <Fingerprint size={64} className="text-green-500 animate-pulse" />
+                        <div className="absolute inset-0 bg-red-500/20 blur-[80px] rounded-full animate-pulse"></div>
+                        <div className="relative w-32 h-32 rounded-full border-4 border-red-500/50 flex items-center justify-center bg-black/60 backdrop-blur-xl">
+                            <Fingerprint size={64} className="text-red-500 animate-pulse" />
                         </div>
                     </div>
                     <h2 className="text-4xl font-black text-white italic mb-3">جاري التحقق...</h2>
-                    <p className="text-green-500 font-bold tracking-[0.4em] text-sm uppercase">VERIFYING IDENTITY</p>
+                    <p className="text-red-500 font-bold tracking-[0.4em] text-sm uppercase">VERIFYING IDENTITY</p>
                 </div>
             )}
 
@@ -637,14 +637,14 @@ export const UserAuthPage: React.FC<UserAuthPageProps> = ({ onSuccess, onBack })
             {step === 'VERIFIED' && (
                 <div className="relative z-10 flex flex-col items-center justify-center text-center">
                     <div className="relative mb-8 success-ring">
-                        <div className="absolute inset-0 bg-green-500/30 blur-[100px] rounded-full"></div>
-                        <div className="relative w-36 h-36 rounded-full border-4 border-green-500 flex items-center justify-center bg-green-500/10 backdrop-blur-xl shadow-[0_0_60px_rgba(34,197,94,0.4)]">
-                            <CheckCircle size={72} className="text-green-500 drop-shadow-[0_0_20px_rgba(34,197,94,0.8)]" />
+                        <div className="absolute inset-0 bg-red-500/30 blur-[100px] rounded-full"></div>
+                        <div className="relative w-36 h-36 rounded-full border-4 border-red-500 flex items-center justify-center bg-red-500/10 backdrop-blur-xl shadow-[0_0_60px_rgba(34,197,94,0.4)]">
+                            <CheckCircle size={72} className="text-red-500 drop-shadow-[0_0_20px_rgba(34,197,94,0.8)]" />
                         </div>
                     </div>
                     <h2 className="text-5xl font-black text-white italic mb-3 slide-up">تم التحقق!</h2>
-                    <p className="text-green-500 font-bold tracking-[0.5em] text-xl uppercase slide-up drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]">VERIFIED ✓</p>
-                    <div className="mt-6 flex items-center gap-3 bg-green-500/10 border border-green-500/20 px-6 py-6 rounded-3xl slide-up overflow-visible">
+                    <p className="text-red-500 font-bold tracking-[0.5em] text-xl uppercase slide-up drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]">VERIFIED ✓</p>
+                    <div className="mt-6 flex items-center gap-3 bg-red-500/10 border border-red-500/20 px-6 py-6 rounded-3xl slide-up overflow-visible">
                         <ProAvatar url={kickAvatar} username={kickUsername} size="w-20 h-20" className="overflow-visible" />
                         <span className="text-white font-black">{kickUsername}</span>
                     </div>

@@ -6,19 +6,20 @@ import {
   Megaphone, Activity, History, Settings, Users,
   Zap, Palette, Eye, EyeOff, RotateCw, Trophy,
   Music, Sparkles, Wind, Flame, Ticket, Fingerprint,
-  Users2, Gavel, Radio, LayoutDashboard, Terminal, X, Clock, LogOut, ShoppingBag, Edit, Plus, Upload, Brain
+  Users2, Gavel, Radio, LayoutDashboard, Terminal, X, Clock, LogOut, ShoppingBag, Edit, Plus, Upload, Brain, Bot
 } from 'lucide-react';
 import { uploadToCloudinary } from '../services/cloudinaryService';
 import { leaderboardService, adminService, supabase } from '../services/supabase';
 import { chatService } from '../services/chatService';
 import { ProAvatar } from './ProAvatar';
+import { BotDashboard } from './BotDashboard';
 
 interface AdminDashboardProps {
   onLogout: () => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'bans' | 'announcements' | 'arena' | 'promo' | 'logs' | 'system' | 'store' | 'mahmah' | 'higher_lower'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'bans' | 'announcements' | 'arena' | 'promo' | 'logs' | 'system' | 'store' | 'mahmah' | 'higher_lower' | 'bot_control'>('overview');
   const [profiles, setProfiles] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [promoCodes, setPromoCodes] = useState<any[]>([]);
@@ -359,6 +360,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'arena', label: 'الساحة', icon: Palette, color: 'text-purple-500' },
     { id: 'logs', label: 'السجل', icon: Terminal, color: 'text-zinc-400' },
     { id: 'system', label: 'الصيانة', icon: Settings, color: 'text-red-600' },
+    { id: 'bot_control', label: 'تحكم البوت', icon: Bot, color: 'text-red-500' },
   ];
 
   return (
@@ -489,6 +491,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                   <p className="text-zinc-500 font-bold text-sm max-w-sm leading-relaxed">جميع الوحدات البرمجية تعمل بكفاءة عالية. السيرفر متصل بقاعدة بيانات SQL السحابية.</p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* BOT CONTROL TAB */}
+          {activeTab === 'bot_control' && (
+            <div className="animate-in fade-in duration-500">
+               <BotDashboard />
             </div>
           )}
 

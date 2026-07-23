@@ -14,6 +14,24 @@ type GameMode = 'chat' | 'friends';
 type Stage = 'mode_select' | 'setup' | 'playing' | 'question';
 type ChatSide = 'chat' | 'streamer';
 
+const CUSTOM_ORDER = [
+  "مستري تاون",
+  "خمن التكمله", 
+  "صوت المشهور",
+  "صورة المشهور",
+  "لفل ون",
+  "ابو سعد",
+  "السعوديه",
+  "اسأله عامه",
+  "اسأله دينيه",
+  "اسألة سيارات"
+];
+
+const normalizeText = (text: string) => {
+  if (!text) return "";
+  return text.replace(/أ|إ|آ/g, 'ا').replace(/ة/g, 'ه').replace(/\s+/g, '');
+};
+
 export interface MahmahCategory {
   id: string;
   name: string;
@@ -131,6 +149,17 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
             questions: catQs
           };
         });
+
+        const normOrder = CUSTOM_ORDER.map(normalizeText);
+        fullCats.sort((a, b) => {
+          let aIdx = normOrder.findIndex(n => normalizeText(a.name) === n);
+          let bIdx = normOrder.findIndex(n => normalizeText(b.name) === n);
+          if (aIdx === -1) aIdx = 999;
+          if (bIdx === -1) bIdx = 999;
+          if (aIdx !== bIdx) return aIdx - bIdx;
+          return a.name.localeCompare(b.name);
+        });
+
         setDbCategories(fullCats);
       }
     };
@@ -525,7 +554,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
     if (!currentQ) return;
     const pts = Math.floor(currentQ.points * fMultiplier * 0.5);
     setTeams(prev => prev.map((t, i) => {
-      if (fStolen && i !== activeTeamIdx) return { ...t, score: t.score + currentQ.points };
+      if (fStolen && i !== activeTeamIdx) return { ...t, score: { ...t, score: t.score + currentQ.points } };
       if (i === activeTeamIdx) return { ...t, score: Math.max(0, t.score - pts) };
       return t;
     }));
@@ -646,7 +675,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl w-full mx-auto">
-        {dbCategories.map((cat, i) => {
+        {[...dbCategories].sort((a, b) => (selectedCategories.includes(b.id) ? 1 : 0) - (selectedCategories.includes(a.id) ? 1 : 0)).map((cat, i) => {
           const isSelected = selectedCategories.includes(cat.id);
           return (
             <button key={cat.id} onClick={() => toggleCategory(cat.id)}
