@@ -40,6 +40,8 @@ import { ViewState } from './types';
 import { GlobalPasswordPage } from './components/GlobalPasswordPage';
 import { UserDashboard } from './components/UserDashboard';
 import { HostLoginPage } from './components/HostLoginPage';
+import { FingerprintAuthPage } from './components/FingerprintAuthPage';
+import { AuthSuccessPage } from './components/AuthSuccessPage';
 import {
   Trophy, Play, Lock, User, Swords, Image as ImageIcon,
   RotateCw, Gift, Flag, Users2, Keyboard, Gem, Coffee,
@@ -47,7 +49,7 @@ import {
   Maximize2, MonitorOff, CheckCircle2, AlertTriangle,
   Crown, Medal, Loader2, RefreshCw, ChevronRight, Video,
   Sword, Globe, Brain, Vote, Bomb, Type, Footprints, Flame, Smile,
-  ArrowUp, ArrowDown, Edit2, Save, Eye, EyeOff, Maximize, Minimize, Layout as LayoutIcon, X, LogIn, LogOut
+  ArrowUp, ArrowDown, Edit2, Save, Eye, EyeOff, Maximize, Minimize, Layout as LayoutIcon, X, LogIn, LogOut, Fingerprint
 } from 'lucide-react';
 import { getAssetUrl } from './utils/assets';
 import { chatService } from './services/chatService';
@@ -493,6 +495,17 @@ const App: React.FC = () => {
       case 'SAFE_CODE': return <SafeCode onHome={() => setCurrentView('HOME')} isOBS={isOBSMode} />;
       case 'MAP_GUESSER': return <MapGuesser onHome={() => setCurrentView('HOME')} isOBS={isOBSMode} />;
       case 'HARDEES_MEMORY': return <HardeesMemory onHome={() => setCurrentView('HOME')} isOBS={isOBSMode} />;
+      case 'FINGERPRINT_AUTH': return (
+        <FingerprintAuthPage 
+          onSuccess={() => setCurrentView('AUTH_SUCCESS')}
+        />
+      );
+      case 'AUTH_SUCCESS': return (
+        <AuthSuccessPage 
+          username="مستخدم VIP"
+          onContinue={() => setCurrentView('HOME')}
+        />
+      );
       case 'ABOUT': return <AboutPage onBack={handleGoHome} />;
 
       case 'HOST_LOGIN': return (
@@ -924,6 +937,32 @@ const App: React.FC = () => {
                 <div className="flex flex-col items-start">
                   <span className="text-white font-black text-base tracking-wider">عن المنصة</span>
                   <span className="text-purple-500/50 font-bold text-[9px] uppercase tracking-[0.3em]">About iABS</span>
+                </div>
+              </button>
+
+              {/* Fingerprint Auth Demo Button */}
+              <button onClick={() => setCurrentView('FINGERPRINT_AUTH')}
+                className="group relative flex items-center gap-4 px-8 py-4 bg-gradient-to-b from-cyan-600/20 to-cyan-700/10 border border-cyan-500/20 hover:border-cyan-400/50 rounded-2xl transition-all duration-500 hover:scale-105 active:scale-95 overflow-hidden"
+                style={{transform:'rotateX(2deg) translateZ(15px)', transformStyle:'preserve-3d', perspective:'500px'}}>
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/10 to-cyan-500/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 skew-x-[-20deg]"></div>
+                <div className="absolute -inset-2 bg-cyan-500/10 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                <Fingerprint size={28} className="text-cyan-500 group-hover:scale-110 transition-transform drop-shadow-[0_0_15px_rgba(34,211,238,0.6)]" />
+                <div className="flex flex-col items-start">
+                  <span className="text-white font-black text-base tracking-wider">بصمة الأمان</span>
+                  <span className="text-cyan-500/50 font-bold text-[9px] uppercase tracking-[0.3em]">Fingerprint Auth</span>
+                </div>
+              </button>
+
+              {/* Auth Success Demo Button */}
+              <button onClick={() => setCurrentView('AUTH_SUCCESS')}
+                className="group relative flex items-center gap-4 px-8 py-4 bg-gradient-to-b from-green-600/20 to-green-700/10 border border-green-500/20 hover:border-green-400/50 rounded-2xl transition-all duration-500 hover:scale-105 active:scale-95 overflow-hidden"
+                style={{transform:'rotateX(2deg) translateZ(15px)', transformStyle:'preserve-3d', perspective:'500px'}}>
+                <div className="absolute inset-0 bg-gradient-to-r from-green-500/0 via-green-500/10 to-green-500/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 skew-x-[-20deg]"></div>
+                <div className="absolute -inset-2 bg-green-500/10 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                <CheckCircle2 size={28} className="text-green-500 group-hover:scale-110 transition-transform drop-shadow-[0_0_15px_rgba(34,197,94,0.6)]" />
+                <div className="flex flex-col items-start">
+                  <span className="text-white font-black text-base tracking-wider">تم المصادقة</span>
+                  <span className="text-green-500/50 font-bold text-[9px] uppercase tracking-[0.3em]">Auth Success</span>
                 </div>
               </button>
 

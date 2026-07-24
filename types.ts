@@ -60,7 +60,9 @@ export type ViewState =
   | 'USER_AUTH'
   | 'SAFE_CODE'
   | 'MAP_GUESSER'
-  | 'HARDEES_MEMORY';
+  | 'HARDEES_MEMORY'
+  | 'FINGERPRINT_AUTH'
+  | 'AUTH_SUCCESS';
 
 // Added GameType to fix import error in TournamentManager.tsx
 export type GameType = 'TRIVIA' | 'BLUR' | 'FLAGS' | 'TYPING' | 'CUPS' | 'GRID' | 'WHEEL' | 'PAINT' | 'BATTLE' | 'BOMB' | 'VOTE' | 'DRAW' | 'FRUIT' | 'LOGO' | 'FORBIDDEN' | 'BOSS' | 'ROULETTE' | 'ZOMBIE' | 'BRIDGE' | 'AUCTION' | 'LETTER' | 'HIGHER_LOWER' | 'SAFE_CODE' | 'MAP_GUESSER' | 'HARDEES_MEMORY';
