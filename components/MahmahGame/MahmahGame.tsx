@@ -3,7 +3,6 @@ import { chatService } from '../../services/chatService';
 import { supabase } from '../../services/supabase';
 import { FortuneWheelModal } from './FortuneWheelModal';
 import { ProAvatar } from '../ProAvatar';
-import { getAssetUrl } from '../../utils/assets';
 import { Home, Users, MessageCircle, Play, Trophy, Check, X, Shield, FastForward, Eye, Star, Crown, Zap, ArrowLeft, Sparkles, Volume2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -113,14 +112,6 @@ const renderAnswerMedia = (q: MahmahQuestion, className = 'max-h-[min(42vh,380px
   );
 };
 
-const STREAMER_WIN_IMAGES = [
-  'iAABS-FAS/image-253661ba-141c-45d1-8fe1-5e65d4c86b3c.png',
-  'iAABS-FAS/image-3d92afa6-91c6-447c-9577-cbd17092d7fc.png',
-  'iAABS-FAS/image-69b2e552-7158-46a1-a496-d2e49f2230f1.png',
-  'iAABS-FAS/image-833e1648-36de-4f46-810b-e4063a7b42a5.png',
-  'iAABS-FAS/image-c1345461-c314-4359-9d5a-4aaf27ed5898.png'
-].map((path) => getAssetUrl(path) || `/${path}`);
-
 const getOppositeChatSide = (side: ChatSide): ChatSide => side === 'chat' ? 'streamer' : 'chat';
 
 // ==========================================
@@ -188,6 +179,17 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
   const chatWinnerRef = useRef(chatWinner);
   const showAnswerRef = useRef(showAnswer);
   const currentQRef = useRef(currentQ);
+  const chatResponderRef = useRef(chatResponder);
+  const stageRef = useRef(stage);
+  const modeRef = useRef(mode);
+
+  const chatQueueRef = useRef<any[]>([]);
+  const isProcessingChatRef = useRef(false);
+  const chatProcessTimerRef = useRef<any>(null);
+  const lastProcessedTimeRef = useRef(0);
+  const CHAT_PROCESS_INTERVAL = 40;
+  const CHAT_BATCH_SIZE = 8;
+  const MAX_CHAT_QUEUE = 2000;
   const totalQuestionCount = activeCategories.reduce((sum, cat) => sum + cat.questions.length, 0);
   const isBoardFinished = totalQuestionCount > 0 && answeredQs.size === totalQuestionCount;
   const topChatPlayer = Object.values(chatPlayers).sort((a, b) => (b as ChatPlayer).score - (a as ChatPlayer).score)[0] as ChatPlayer | undefined;
@@ -214,6 +216,9 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
   useEffect(() => { chatWinnerRef.current = chatWinner; }, [chatWinner]);
   useEffect(() => { showAnswerRef.current = showAnswer; }, [showAnswer]);
   useEffect(() => { currentQRef.current = currentQ; }, [currentQ]);
+  useEffect(() => { chatResponderRef.current = chatResponder; }, [chatResponder]);
+  useEffect(() => { stageRef.current = stage; }, [stage]);
+  useEffect(() => { modeRef.current = mode; }, [mode]);
 
   const passChatQuestion = (nextResponder: ChatSide) => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -399,12 +404,10 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
     const na = normalizeForChat(a);
     const nb = normalizeForChat(b);
     if (na === nb) return true;
-    if (na.length >= 2 && nb.includes(na)) return true;
-    if (nb.length >= 2 && na.includes(nb)) return true;
     if (na.length >= 3 && nb.length >= 3) {
       const dist = levenshtein(na, nb);
       const maxLen = Math.max(na.length, nb.length);
-      if (maxLen > 0 && dist / maxLen <= 0.25) return true;
+      if (maxLen > 0 && dist / maxLen <= 0.2) return true;
     }
     return false;
   };
@@ -419,13 +422,11 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
     const cTokens = cNorm.split(/\s+/).filter(Boolean);
     if (cTokens.length === 0 || uTokens.length === 0) return false;
 
-    if (uNorm.includes(cNorm) || cNorm.includes(uNorm)) return true;
-
-    const matchCount = cTokens.filter(ct => uNorm.includes(ct) || uTokens.some(ut => tokenMatch(ut, ct))).length;
+    const matchCount = cTokens.filter(ct => uTokens.some(ut => tokenMatch(ut, ct))).length;
 
     if (cTokens.length === 1) return matchCount >= 1;
-    if (cTokens.length === 2) return matchCount >= 1;
-    return matchCount >= 2;
+    if (cTokens.length === 2) return matchCount >= 2;
+    return matchCount >= cTokens.length;
   };
 
   const BAD_WORDS = new Set([
@@ -442,33 +443,81 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
   };
 
   // ==========================================
-  // CHAT LISTENER
+  // CHAT LISTENER (HIGH-PERFORMANCE / 5000+ MSG/S)
   // ==========================================
   useEffect(() => {
-    if (stage !== 'question' || mode !== 'chat' || chatResponder !== 'chat') return;
+    const startChatProcessor = () => {
+      if (chatProcessTimerRef.current) return;
+      
+      chatProcessTimerRef.current = setInterval(() => {
+        if (isProcessingChatRef.current) return;
+        if (chatQueueRef.current.length === 0) return;
+        
+        const now = Date.now();
+        if (now - lastProcessedTimeRef.current < CHAT_PROCESS_INTERVAL) return;
+        
+        isProcessingChatRef.current = true;
+        lastProcessedTimeRef.current = now;
+        
+        const batch = chatQueueRef.current.splice(0, CHAT_BATCH_SIZE);
+        
+        if (stageRef.current !== 'question' || modeRef.current !== 'chat' || chatResponderRef.current !== 'chat') {
+          isProcessingChatRef.current = false;
+          return;
+        }
+        
+        if (chatWinnerRef.current || showAnswerRef.current) {
+          isProcessingChatRef.current = false;
+          return;
+        }
+        
+        const q = currentQRef.current;
+        if (!q) {
+          isProcessingChatRef.current = false;
+          return;
+        }
+        
+        for (const msg of batch) {
+          const rawContent = msg.content.replace(/\[emote:\d+:[^\]]*\]/gi, '').replace(/<[^>]*>/g, '').trim();
+          const userAnswer = normalizeForChat(rawContent);
+          const correctAnswer = normalizeForChat(q.answer);
+          
+          if (hasBadWord(rawContent)) continue;
+          if (chatWinnerRef.current || showAnswerRef.current) break;
+          
+          const isCorrect = isAnswerCorrect(userAnswer, correctAnswer);
+          
+          if (isCorrect) {
+            const winner = { username: msg.user.username, avatar: msg.user.avatar || '', color: msg.user.color || '#fff' };
+            pendingChatWinnerRef.current = winner;
+            chatWinnerRef.current = winner;
+            setChatWinner(winner);
+            break;
+          }
+        }
+        
+        isProcessingChatRef.current = false;
+      }, CHAT_PROCESS_INTERVAL);
+    };
     
     const unsubscribe = chatService.onMessage((msg) => {
-      if (chatWinnerRef.current || showAnswerRef.current) return;
-      const q = currentQRef.current;
-      if (!q) return;
-
-      const rawContent = msg.content.replace(/\[emote:\d+:[^\]]*\]/gi, '').replace(/<[^>]*>/g, '').trim();
-      const userAnswer = normalizeForChat(rawContent);
-      const correctAnswer = normalizeForChat(q.answer);
-
-      if (hasBadWord(rawContent)) return;
-
-      const isCorrect = isAnswerCorrect(userAnswer, correctAnswer);
-      
-      if (isCorrect) {
-        const winner = { username: msg.user.username, avatar: msg.user.avatar || '', color: msg.user.color || '#fff' };
-        pendingChatWinnerRef.current = winner;
-        setChatWinner(winner);
+      chatQueueRef.current.push(msg);
+      if (chatQueueRef.current.length > MAX_CHAT_QUEUE) {
+        chatQueueRef.current.splice(0, chatQueueRef.current.length - MAX_CHAT_QUEUE);
       }
+      startChatProcessor();
     });
-
-    return () => unsubscribe();
-  }, [stage, mode, chatResponder]);
+    
+    return () => {
+      unsubscribe();
+      if (chatProcessTimerRef.current) {
+        clearInterval(chatProcessTimerRef.current);
+        chatProcessTimerRef.current = null;
+      }
+      chatQueueRef.current = [];
+      isProcessingChatRef.current = false;
+    };
+  }, []);
 
   // ==========================================
   // QUESTION ACTIONS
@@ -536,6 +585,12 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
     }, 4000);
   };
 
+  useEffect(() => {
+    if (chatWinner && !chatWinner.isStreamer && pendingChatWinnerRef.current) {
+      chatHostConfirm();
+    }
+  }, [chatWinner]);
+
   const chatHostReject = () => {
     if (!currentQ) return;
     pendingChatWinnerRef.current = null;
@@ -601,7 +656,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
   // RENDER: MODE SELECT
   // ==========================================
   const renderModeSelect = () => (
-    <div className="flex-1 w-full flex flex-col items-center justify-center p-4 relative overflow-hidden" style={{ animation: 'fadeIn 0.6s ease-out' }}>
+    <div className="flex-1 w-full flex flex-col items-center justify-center p-4 pl-[420px] relative overflow-hidden" style={{ animation: 'fadeIn 0.6s ease-out' }}>
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-20 left-20 w-72 h-72 bg-red-500/10 blur-[120px] rounded-full animate-pulse" />
         <div className="absolute bottom-20 right-20 w-72 h-72 bg-blue-500/10 blur-[120px] rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
@@ -651,7 +706,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
   // RENDER: SETUP
   // ==========================================
   const renderSetup = () => (
-    <div className="flex-1 w-full max-w-5xl mx-auto flex flex-col items-center p-4 pt-8" style={{ animation: 'fadeIn 0.5s ease-out' }}>
+    <div className="flex-1 w-full max-w-5xl mx-auto flex flex-col items-center p-4 pt-8 pl-[420px]" style={{ animation: 'fadeIn 0.5s ease-out' }}>
       <button onClick={() => setStage('mode_select')} className="self-start mb-6 flex items-center gap-2 text-white/40 hover:text-white font-bold transition-colors">
         <ArrowLeft size={18} /> رجوع
       </button>
@@ -715,7 +770,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
     <div className="flex-1 w-full max-w-[98%] mx-auto flex gap-4 pt-3 pb-6" style={{ animation: 'fadeIn 0.5s ease-out' }}>
       
       {/* Board Area */}
-      <div className="flex-[3] flex flex-col">
+      <div className="flex-1 flex flex-col">
         {/* Top Header / Mode Indicator */}
         <div className="flex items-center justify-between mb-4 px-4">
           <div className="flex items-center gap-3">
@@ -762,7 +817,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
       </div>
 
       {/* Side Panel (Scoreboards) */}
-      <div className="flex-[1] flex flex-col bg-white/5 border border-white/10 rounded-3xl p-4 mt-12 overflow-hidden shadow-2xl relative">
+      <div className="w-[380px] shrink-0 flex flex-col bg-white/5 border border-white/10 rounded-3xl p-4 mt-[230px] ml-4 overflow-hidden shadow-2xl relative">
         <div className="absolute top-0 right-0 w-full h-32 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
         
         {mode === 'friends' ? (
@@ -875,25 +930,30 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
 
         {/* Header */}
         <div className="relative z-50 flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/30 backdrop-blur-md">
-          <button onClick={closeQuestion} className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-all border border-white/10">
+          <button onClick={closeQuestion} className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-all border border-white/10 shrink-0">
             <X size={20} />
           </button>
-          {mode === 'chat' && chatResponder && (
-            <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border backdrop-blur-md ${chatResponder === 'chat' ? 'border-blue-500/20 bg-blue-500/10 text-blue-200' : 'border-yellow-500/20 bg-yellow-500/10 text-yellow-200'}`}>
-              <span className="font-bold text-sm">{chatResponder === 'chat' ? '💬 الشات' : '😎 الاستريمر'}</span>
-              {chatPassUsed && <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-black text-white/80">الفرصة الأخيرة</span>}
-            </div>
-          )}
-          {mode === 'friends' && activeTeam && (
-            <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border backdrop-blur-md border-white/10 bg-white/5 text-white/80`}>
-              <span className="font-bold text-sm">دور: {activeTeam.name}</span>
-            </div>
-          )}
+          
+          <div className="flex items-center gap-4">
+            {mode === 'chat' && chatResponder && (
+              <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border backdrop-blur-md ${chatResponder === 'chat' ? 'border-blue-500/20 bg-blue-500/10 text-blue-200' : 'border-yellow-500/20 bg-yellow-500/10 text-yellow-200'}`}>
+                <span className="font-bold text-sm">{chatResponder === 'chat' ? '💬 الشات' : '😎 الاستريمر'}</span>
+                {chatPassUsed && <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-black text-white/80">الفرصة الأخيرة</span>}
+              </div>
+            )}
+            {mode === 'friends' && activeTeam && (
+              <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border backdrop-blur-md border-white/10 bg-white/5 text-white/80`}>
+                <span className="font-bold text-sm">دور: {activeTeam.name}</span>
+              </div>
+            )}
+            {/* Spacer to push content away from Facecam on the left */}
+            <div className="w-[400px] shrink-0 pointer-events-none" />
+          </div>
         </div>
 
         {/* Friends Helpers */}
         {mode === 'friends' && (
-          <div className="absolute top-40 right-8 flex gap-2 z-20">
+          <div className="absolute top-40 right-[400px] flex gap-2 z-20">
             <button onClick={() => setFMultiplier(2)} disabled={showAnswer || fMultiplier === 2}
               className={`flex items-center gap-2 px-3 py-2 rounded-xl font-black text-xs transition-all border ${fMultiplier === 2 ? 'bg-yellow-500 text-black border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.5)]' : 'bg-red-600/20 text-red-400 border-red-500/30 hover:bg-red-600/30'}`}>
               <FastForward size={14} /> دبل x2
@@ -915,7 +975,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
 
         {/* Team Info for Friends Mode */}
         {mode === 'friends' && (
-          <div className="absolute top-40 right-8 mt-14 z-20">
+          <div className="absolute top-40 right-[400px] mt-14 z-20">
             <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-2xl border border-red-500/30 bg-red-600/20 backdrop-blur-xl shadow-lg ${activeTeam.color}`}>
               {fStolen ? <span className="text-red-400 animate-pulse font-black">🔊 سؤال مسروق!</span> : <span className="font-black text-white">دور: {activeTeam.name}</span>}
             </div>
@@ -923,7 +983,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
         )}
 
         {mode === 'chat' && (
-          <div className="absolute top-40 right-8 z-20">
+          <div className="absolute top-40 right-[400px] z-20">
             <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-2xl border backdrop-blur-xl shadow-lg ${chatResponder === 'chat' ? 'border-blue-500/30 bg-blue-600/20' : 'border-yellow-500/30 bg-yellow-500/20'}`}>
               <span className="font-bold text-white/55">الدور الحالي:</span>
               <span className={`font-black ${chatResponder === 'chat' ? 'text-blue-300' : 'text-yellow-300'}`}>{chatResponderLabel}</span>
@@ -933,7 +993,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
         )}
 
         {/* Main Content */}
-        <div className={`flex-1 min-h-0 overflow-y-auto flex flex-col items-center relative z-10 px-8 ${isRevealed ? 'justify-start gap-4 py-4' : 'justify-center gap-8 py-8'}`}>
+        <div className={`flex-1 min-h-0 overflow-y-auto flex flex-col items-center relative z-10 px-8 justify-center gap-6 py-8`}>
 
           {/* Score & Time Bar */}
           <div className="flex items-center justify-center gap-4 mb-2 shrink-0">
@@ -1018,92 +1078,32 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
               chatWinner ? (
                 <div className="flex flex-col items-center gap-6 w-full" style={{ animation: 'zoomBounce 0.5s ease-out' }}>
                   {isStreamerWinner ? (
-                    <div className="relative w-full max-w-5xl overflow-hidden rounded-[2rem] border border-yellow-400/30 bg-gradient-to-br from-yellow-500/16 via-amber-500/12 to-black/45 px-4 py-6 md:px-8 md:py-8 shadow-[0_0_80px_rgba(234,179,8,0.18)]">
-                      <div className="absolute inset-0 pointer-events-none">
-                        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-yellow-300/14 to-transparent" />
-                        <div className="absolute -top-10 left-10 w-40 h-40 rounded-full bg-yellow-400/16 blur-3xl animate-pulse" />
-                        <div className="absolute -bottom-10 right-10 w-44 h-44 rounded-full bg-orange-500/16 blur-3xl animate-pulse" style={{ animationDelay: '0.8s' }} />
-                      </div>
+                     <div className="relative w-full max-w-4xl overflow-hidden rounded-[2.5rem] border border-yellow-400/30 bg-gradient-to-br from-yellow-500/16 via-amber-500/12 to-black/45 px-6 py-8 md:px-10 md:py-10 shadow-[0_0_80px_rgba(234,179,8,0.18)]">
+                       <div className="absolute inset-0 pointer-events-none">
+                         <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-yellow-300/14 to-transparent" />
+                         <div className="absolute -top-16 left-10 w-48 h-48 rounded-full bg-yellow-400/16 blur-3xl animate-pulse" />
+                         <div className="absolute -bottom-16 right-10 w-52 h-52 rounded-full bg-orange-500/16 blur-3xl animate-pulse" style={{ animationDelay: '0.8s' }} />
+                       </div>
 
-                      <div className="relative z-10 flex flex-col items-center gap-6">
-                        <div className="inline-flex items-center gap-3 rounded-full border border-yellow-300/40 bg-yellow-400/12 px-6 py-3 text-yellow-200 shadow-[0_0_25px_rgba(250,204,21,0.2)] backdrop-blur-xl">
-                          <Crown size={24} className="text-yellow-300" />
-                          <span className="font-black text-xl md:text-2xl">الاستريمر خطف السؤال!</span>
-                          <Sparkles size={22} className="text-yellow-200" />
-                        </div>
-
-                        <div className="w-full max-w-4xl">
-                          <div className="hidden md:grid grid-cols-4 items-center gap-4">
-                            <div className="space-y-4">
-                              {STREAMER_WIN_IMAGES.slice(0, 2).map((src, idx) => (
-                                <div
-                                  key={src}
-                                  className="group relative overflow-hidden rounded-[1.6rem] border border-white/15 bg-white/5 p-2 backdrop-blur-xl shadow-[0_18px_45px_rgba(0,0,0,0.35)]"
-                                  style={{ animation: `winnerFloat ${3.6 + idx * 0.3}s ease-in-out infinite` }}
-                                >
-                                  <div className="absolute inset-0 bg-gradient-to-br from-white/14 via-transparent to-transparent opacity-70" />
-                                  <img src={src} alt={`صورة فوز الاستريمر ${idx + 1}`} className="relative z-10 h-40 w-full rounded-[1.15rem] object-cover transition-transform duration-500 group-hover:scale-105" />
-                                </div>
-                              ))}
-                            </div>
-
-                            <div
-                              className="group relative col-span-2 overflow-hidden rounded-[2rem] border border-yellow-300/40 bg-black/20 p-3 shadow-[0_20px_90px_rgba(250,204,21,0.2)]"
-                              style={{ animation: 'winnerFloat 4.2s ease-in-out infinite' }}
-                            >
-                              <div className="absolute inset-0 bg-gradient-to-br from-yellow-300/20 via-transparent to-orange-400/10" />
-                              <div className="absolute -inset-1 bg-gradient-to-r from-yellow-300/20 via-transparent to-orange-400/20 blur-2xl opacity-80" />
-                              <img src={STREAMER_WIN_IMAGES[2]} alt="الصورة الرئيسية لفوز الاستريمر" className="relative z-10 h-[24rem] w-full rounded-[1.5rem] object-cover" />
-                            </div>
-
-                            <div className="space-y-4">
-                              {STREAMER_WIN_IMAGES.slice(3).map((src, idx) => (
-                                <div
-                                  key={src}
-                                  className="group relative overflow-hidden rounded-[1.6rem] border border-white/15 bg-white/5 p-2 backdrop-blur-xl shadow-[0_18px_45px_rgba(0,0,0,0.35)]"
-                                  style={{ animation: `winnerFloat ${4 + idx * 0.35}s ease-in-out infinite`, animationDelay: `${idx * 0.15}s` }}
-                                >
-                                  <div className="absolute inset-0 bg-gradient-to-br from-white/14 via-transparent to-transparent opacity-70" />
-                                  <img src={src} alt={`صورة فوز الاستريمر ${idx + 4}`} className="relative z-10 h-40 w-full rounded-[1.15rem] object-cover transition-transform duration-500 group-hover:scale-105" />
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-3 md:hidden">
-                            {STREAMER_WIN_IMAGES.map((src, idx) => (
-                              <div
-                                key={src}
-                                className={`group relative overflow-hidden rounded-[1.4rem] border p-2 backdrop-blur-xl shadow-[0_18px_45px_rgba(0,0,0,0.35)] ${idx === 2 ? 'col-span-2 border-yellow-300/40 bg-yellow-400/10' : 'border-white/15 bg-white/5'}`}
-                                style={{ animation: `winnerFloat ${3.6 + idx * 0.25}s ease-in-out infinite`, animationDelay: `${idx * 0.08}s` }}
-                              >
-                                <div className="absolute inset-0 bg-gradient-to-br from-white/14 via-transparent to-transparent opacity-70" />
-                                <img src={src} alt={`صورة فوز الاستريمر ${idx + 1}`} className={`relative z-10 w-full rounded-[1rem] object-cover transition-transform duration-500 group-hover:scale-[1.03] ${idx === 2 ? 'h-64' : 'h-36'}`} />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+                       <div className="relative z-10 flex flex-col items-center gap-6">
+                         <div className="inline-flex items-center gap-3 rounded-full border border-yellow-300/40 bg-yellow-400/12 px-8 py-4 text-yellow-200 shadow-[0_0_25px_rgba(250,204,21,0.2)] backdrop-blur-xl">
+                           <Crown size={28} className="text-yellow-300" />
+                           <span className="font-black text-2xl md:text-3xl">الاستريمر خطف السؤال!</span>
+                           <Sparkles size={26} className="text-yellow-200" />
+                         </div>
 
                          <div className="flex flex-col items-center gap-4 text-center">
-                           <div className="text-white font-black text-5xl md:text-6xl tracking-tight drop-shadow-[0_0_30px_rgba(250,204,21,0.3)]">
+                           <div className="text-white font-black text-6xl md:text-7xl tracking-tight drop-shadow-[0_0_40px_rgba(250,204,21,0.4)]">
                              {chatWinner.username}
                            </div>
-                           <div className="text-yellow-100/80 font-bold text-lg md:text-xl">
-                             احتفالية خاصة بصور الستريمر الخمس
+                           <div className="text-yellow-100/80 font-bold text-xl md:text-2xl">
+                             🏆 احتفال الاستريمر بالفوز الرائع
                            </div>
                            <div className="text-white/40 font-bold text-xs uppercase tracking-widest">✅ الإجابة الصحيحة</div>
-                           <div className="text-white font-black text-2xl md:text-3xl text-green-400 tracking-tight">{currentQ.answer}</div>
-                           <div className="flex flex-wrap items-center justify-center gap-4 mt-2">
-                             <button onClick={chatHostConfirm} className="group relative flex items-center gap-3 px-10 py-4 rounded-full font-black text-xl bg-gradient-to-br from-green-400 to-green-700 text-white hover:scale-105 active:scale-95 transition-all shadow-[0_0_50px_rgba(34,197,94,0.5)] border border-green-500/30">
-                               <Check size={24} /> ✅ صحيقة
-                             </button>
-                             <button onClick={chatHostReject} className="flex items-center gap-3 bg-white/10 text-white px-8 py-4 rounded-full font-black text-lg hover:bg-white/15 active:scale-95 transition-all border border-white/15">
-                               ❌ خاطئة
-                             </button>
-                           </div>
+                            <div className="text-white font-black text-3xl md:text-4xl text-green-400 tracking-tight">{currentQ.answer}</div>
                          </div>
-                      </div>
-                    </div>
+                       </div>
+                     </div>
                   ) : (
                     <>
                       <div className="text-green-400 font-black text-4xl mb-2">🎉 الفائز!</div>
@@ -1113,14 +1113,6 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
                       </div>
                       <div className="text-white/40 font-bold text-xs uppercase tracking-widest mb-1">✅ الإجابة الصحيحة</div>
                       <div className="text-white font-black text-2xl md:text-3xl text-green-400 tracking-tight">{currentQ.answer}</div>
-                      <div className="flex flex-wrap items-center justify-center gap-4 mt-2">
-                        <button onClick={chatHostConfirm} className="group relative flex items-center gap-3 px-10 py-4 rounded-full font-black text-xl bg-gradient-to-br from-green-400 to-green-700 text-white hover:scale-105 active:scale-95 transition-all shadow-[0_0_50px_rgba(34,197,94,0.5)] border border-green-500/30">
-                          <Check size={24} /> ✅ صحيقة
-                        </button>
-                        <button onClick={chatHostReject} className="flex items-center gap-3 bg-white/10 text-white px-8 py-4 rounded-full font-black text-lg hover:bg-white/15 active:scale-95 transition-all border border-white/15">
-                          ❌ خاطئة
-                        </button>
-                      </div>
                     </>
                   )}
                 </div>
@@ -1261,7 +1253,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
   // MAIN RENDER
   // ==========================================
   return (
-    <>
+    <div className="w-full h-full flex flex-col">
       {stage === 'mode_select' && renderModeSelect()}
       {stage === 'setup' && renderSetup()}
       {stage === 'playing' && renderBoard()}
@@ -1274,8 +1266,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
         @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes zoomBounce { 0% { opacity: 0; transform: scale(0.3); } 70% { transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
         @keyframes floatParticle { 0%, 100% { transform: translateY(0) translateX(0); opacity: 0.2; } 50% { transform: translateY(-20px) translateX(10px); opacity: 0.6; } }
-        @keyframes winnerFloat { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-10px) scale(1.015); } }
       `}</style>
-    </>
+    </div>
   );
 };

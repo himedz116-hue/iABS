@@ -327,7 +327,11 @@ export const HardeesMemory: React.FC<HardeesMemoryProps> = ({ onHome, isOBS }) =
           {/* Main Grid Area */}
           <div className="flex-1 flex flex-col items-center justify-center relative">
             <div
-              className="grid gap-2 w-full max-w-[90vw] max-h-[80vh]"
+              className={`grid gap-2 w-full ${
+                  GRID_CONFIG[difficulty].cols <= 4 ? 'max-w-4xl' :
+                  GRID_CONFIG[difficulty].cols <= 6 ? 'max-w-5xl' :
+                  GRID_CONFIG[difficulty].cols <= 8 ? 'max-w-6xl' : 'max-w-7xl'
+                }`}
               style={{ 
                 gridTemplateColumns: `repeat(${GRID_CONFIG[difficulty].cols}, minmax(0, 1fr))`,
               }}
@@ -408,7 +412,7 @@ export const HardeesMemory: React.FC<HardeesMemoryProps> = ({ onHome, isOBS }) =
           </div>
 
           {/* Right Sidebar: Leaderboard & Stats */}
-          <div className="w-80 flex flex-col gap-4">
+          <div className="w-[340px] flex flex-col gap-4 mt-[230px] shrink-0">
             <div className="bg-black/60 rounded-3xl border border-orange-500/30 p-5 backdrop-blur-xl shadow-[0_0_40px_rgba(234,88,12,0.1)]">
               <div className="flex items-center gap-3 mb-4 border-b border-orange-900/50 pb-4">
                 <Timer className="w-6 h-6 text-orange-400" />

@@ -186,7 +186,28 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onChangeV
           }}
         ></div>
 
+        {/* Streamer Facecam Frame */}
+        {isAuthorized && currentView !== 'ABOUT' && (
+          <div className="absolute top-8 left-8 w-[400px] h-[225px] pointer-events-none z-[100]">
+            {/* Bottom Line (fades to left) */}
+            <div className="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-l from-red-500 via-red-600 to-transparent shadow-[0_0_20px_rgba(239,68,68,0.6)]"></div>
+            {/* Right Line (fades to top) */}
+            <div className="absolute bottom-0 right-0 w-[3px] h-full bg-gradient-to-t from-red-500 via-red-600 to-transparent shadow-[0_0_20px_rgba(239,68,68,0.6)]"></div>
+            
+            {/* Corner Glow Accent (bottom-right) */}
+            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-white rounded-full shadow-[0_0_15px_rgba(255,255,255,0.9)] animate-pulse"></div>
+            <div className="absolute -bottom-4 -right-4 w-10 h-10 bg-red-500/20 blur-xl rounded-full"></div>
+            
+            {/* Label */}
+            <div className="absolute bottom-4 right-4 flex items-center gap-2 opacity-50">
+              <span className="text-white font-black text-[9px] tracking-[0.3em] uppercase italic">Facecam</span>
+              <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_5px_red]"></div>
+            </div>
+          </div>
+        )}
+
         {/* Content Container */}
+        {/* Added pr-[350px] padding for top area to prevent overlap if elements try to align right */}
         <div className="flex-1 w-full h-full relative z-10 overflow-y-auto overflow-x-hidden flex flex-col items-center">
           {children}
         </div>

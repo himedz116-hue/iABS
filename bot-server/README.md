@@ -16,6 +16,23 @@ npm install
 node server.js
 ```
 
+### الطريقة 3: سيرفر جافا للسرعة والاحتياط
+```
+cd java-server
+build.bat
+run.bat
+```
+
+السيرفر الجافا يعمل على المنفذ 3002 ويمكن استخدامه كخادم احتياطي أو رئيسي أدق من Node.js.
+
+لتشغيل كلاهما معاً (للاحتياط):
+```javascript
+localStorage.setItem('iabs_bot_server_urls', JSON.stringify([
+  'http://localhost:3001',
+  'http://localhost:3002'
+]));
+```
+
 ## API endpoints
 
 - `GET /api/bot/status` - حالة البوت

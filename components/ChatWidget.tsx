@@ -61,7 +61,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ lang }) => {
       unbindMsg();
       unbindDelete();
       unbindStatus();
-      chatService.disconnect();
     };
   }, []);
 

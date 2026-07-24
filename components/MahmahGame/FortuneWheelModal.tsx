@@ -47,7 +47,7 @@ export const FortuneWheelModal: React.FC<FortuneWheelModalProps> = ({ onClose, o
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-xl" style={{ animation: 'fadeIn 0.3s ease-out' }}>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-xl pr-[380px]" style={{ animation: 'fadeIn 0.3s ease-out' }}>
       
       {/* Confetti particles */}
       {showConfetti && (
@@ -139,7 +139,7 @@ export const FortuneWheelModal: React.FC<FortuneWheelModalProps> = ({ onClose, o
         )}
       </div>
 
-      <button onClick={onClose} disabled={isSpinning} className="absolute top-6 left-6 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-50">
+      <button onClick={onClose} disabled={isSpinning} className="absolute top-6 left-[440px] w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-50 z-20">
         <X size={24} />
       </button>
 
