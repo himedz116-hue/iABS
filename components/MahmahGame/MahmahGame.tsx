@@ -706,7 +706,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
   // RENDER: SETUP
   // ==========================================
   const renderSetup = () => (
-    <div className="flex-1 w-full max-w-5xl mx-auto flex flex-col items-center p-4 pt-16" style={{ animation: 'fadeIn 0.5s ease-out' }}>
+    <div className="flex-1 w-full max-w-5xl mx-auto flex flex-col items-center p-4 pt-32" style={{ animation: 'fadeIn 0.5s ease-out' }}>
       <button onClick={() => setStage('mode_select')} className="self-start mb-6 flex items-center gap-2 text-white/40 hover:text-white font-bold transition-colors">
         <ArrowLeft size={18} /> رجوع
       </button>
