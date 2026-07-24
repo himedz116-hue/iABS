@@ -384,12 +384,14 @@ const App: React.FC = () => {
         <button
           onClick={isComingSoon ? undefined : onClick}
           disabled={isComingSoon || isEditMode}
-          className={`group relative flex items-center justify-center gap-1.5 md:gap-2 overflow-hidden border transition-all duration-300 active:scale-95 text-white font-black italic
+          className={`group relative flex items-center justify-center gap-2 md:gap-3 overflow-hidden border transition-all duration-300 active:scale-95 text-white font-black italic
             ${isEditMode ? "border-white/40 ring-4 ring-white/10 scale-95 opacity-80" : "border-white/10"}
             ${!isVisible && isEditMode ? "opacity-40 grayscale" : ""}
             ${isComingSoon ? "bg-zinc-900 cursor-not-allowed grayscale pointer-events-none" : "bg-iabs-red shadow-[0_10px_30px_rgba(255,0,0,0.25)]"}
-            ${forcePrimary
-              ? `px-6 py-4 text-base md:text-xl rounded-[1.5rem] hover:scale-105 w-full lg:max-w-md shadow-[0_15px_40px_rgba(255,0,0,0.4)] ${isMahmah ? 'bg-gradient-to-r from-red-600 via-red-700 to-rose-700 shadow-[0_0_60px_rgba(255,0,0,0.5)] border-red-400/50' : ''}`
+            ${isMahmah
+              ? "px-8 py-6 text-xl md:text-2xl rounded-[2rem] hover:scale-105 w-full lg:max-w-lg shadow-[0_20px_50px_rgba(255,0,0,0.6)] bg-gradient-to-r from-red-600 via-red-700 to-rose-700 border-red-400/60"
+              : forcePrimary
+              ? "px-6 py-4 text-base md:text-xl rounded-[1.5rem] hover:scale-105 w-full lg:max-w-md shadow-[0_15px_40px_rgba(255,0,0,0.4)]"
               : "px-3 py-2 text-xs md:text-sm rounded-[1rem] hover:scale-105 w-full"
             }`}
         >
