@@ -208,7 +208,11 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
   const [fMultiplier, setFMultiplier] = useState(1);
   const [fBlocked, setFBlocked] = useState(false);
   const [fStolen, setFStolen] = useState(false);
+  const [fMultiplierUsed, setFMultiplierUsed] = useState(false);
+  const [fBlockedUsed, setFBlockedUsed] = useState(false);
+  const [fStolenUsed, setFStolenUsed] = useState(false);
   const [showWheel, setShowWheel] = useState(false);
+  const [answeringTeam, setAnsweringTeam] = useState<string | null>(null);
   const [streamerRevealed, setStreamerRevealed] = useState(false);
   const [streamerCorrectFlash, setStreamerCorrectFlash] = useState(false);
 
@@ -272,6 +276,10 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
         { id: 't2', name: team2Name || 'الفريق 2', score: 0, color: 'text-red-400', bgColor: 'bg-red-600' }
       ]);
       setActiveTeamIdx(0);
+      // Reset helper usage tracking for new game
+      setFMultiplierUsed(false);
+      setFBlockedUsed(false);
+      setFStolenUsed(false);
     }
     
     setStage('playing');
@@ -286,12 +294,14 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
     setStreamerRevealed(false);
     setStreamerCorrectFlash(false);
     setTimer(30);
+    setAnsweringTeam(null);
     
     if (mode === 'chat') {
       setChatWinner(null);
       setChatResponder(chatTurnOwner);
       setChatPassUsed(false);
     } else {
+      // Reset helpers for each question (but keep usage tracking)
       setFMultiplier(1);
       setFBlocked(false);
       setFStolen(false);
@@ -601,19 +611,30 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
   const friendsCorrect = () => {
     if (!currentQ) return;
     const pts = currentQ.points * fMultiplier;
+    setAnsweringTeam(activeTeamIdx === 0 ? team1Name : team2Name);
     setTeams(prev => prev.map((t, i) => i === activeTeamIdx ? { ...t, score: t.score + pts } : t));
-    closeQuestion();
+    setShowAnswer(true);
+    confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+    setTimeout(() => {
+      closeQuestion();
+    }, 4000);
   };
 
   const friendsWrong = () => {
     if (!currentQ) return;
     const pts = Math.floor(currentQ.points * fMultiplier * 0.5);
+    setAnsweringTeam(null);
     setTeams(prev => prev.map((t, i) => {
-      if (fStolen && i !== activeTeamIdx) return { ...t, score: { ...t, score: t.score + currentQ.points } };
+      // If steal is active, give points to the other team
+      if (fStolen && i !== activeTeamIdx) return { ...t, score: t.score + currentQ.points };
+      // Deduct points from current team
       if (i === activeTeamIdx) return { ...t, score: Math.max(0, t.score - pts) };
       return t;
     }));
-    closeQuestion();
+    setShowAnswer(true);
+    setTimeout(() => {
+      closeQuestion();
+    }, 4000);
   };
 
   const skipTimer = () => {
@@ -954,16 +975,16 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
         {/* Friends Helpers */}
         {mode === 'friends' && (
           <div className="absolute top-40 right-[400px] flex gap-2 z-20">
-            <button onClick={() => setFMultiplier(2)} disabled={showAnswer || fMultiplier === 2}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl font-black text-xs transition-all border ${fMultiplier === 2 ? 'bg-yellow-500 text-black border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.5)]' : 'bg-red-600/20 text-red-400 border-red-500/30 hover:bg-red-600/30'}`}>
+            <button onClick={() => { setFMultiplier(2); setFMultiplierUsed(true); }} disabled={showAnswer || fMultiplier === 2 || fMultiplierUsed}
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl font-black text-xs transition-all border ${fMultiplier === 2 ? 'bg-yellow-500 text-black border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.5)]' : fMultiplierUsed ? 'bg-zinc-800 text-zinc-500 border-zinc-700 cursor-not-allowed' : 'bg-red-600/20 text-red-400 border-red-500/30 hover:bg-red-600/30'}`}>
               <FastForward size={14} /> دبل x2
             </button>
-            <button onClick={() => setFBlocked(true)} disabled={showAnswer || fBlocked}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl font-black text-xs transition-all border ${fBlocked ? 'bg-red-500 text-white border-red-500' : 'bg-red-600/20 text-red-400 border-red-500/30 hover:bg-red-600/30'}`}>
+            <button onClick={() => { setFBlocked(true); setFBlockedUsed(true); }} disabled={showAnswer || fBlocked || fBlockedUsed}
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl font-black text-xs transition-all border ${fBlocked ? 'bg-red-500 text-white border-red-500' : fBlockedUsed ? 'bg-zinc-800 text-zinc-500 border-zinc-700 cursor-not-allowed' : 'bg-red-600/20 text-red-400 border-red-500/30 hover:bg-red-600/30'}`}>
               <Shield size={14} /> منع
             </button>
-            <button onClick={() => setFStolen(true)} disabled={showAnswer || fStolen || fBlocked}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl font-black text-xs transition-all border ${fStolen ? 'bg-red-500 text-white border-red-500' : 'bg-red-600/20 text-red-400 border-red-500/30 hover:bg-red-600/30'}`}>
+            <button onClick={() => { setFStolen(true); setFStolenUsed(true); }} disabled={showAnswer || fStolen || fBlocked || fStolenUsed}
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl font-black text-xs transition-all border ${fStolen ? 'bg-red-500 text-white border-red-500' : fStolenUsed ? 'bg-zinc-800 text-zinc-500 border-zinc-700 cursor-not-allowed' : 'bg-red-600/20 text-red-400 border-red-500/30 hover:bg-red-600/30'}`}>
               <Volume2 size={14} /> سرقة
             </button>
             <button onClick={() => setShowWheel(true)} disabled={showAnswer}
@@ -1208,9 +1229,15 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
             ) : (
               // Friends mode answer display
               showAnswer && (
-                <div className="flex flex-col items-center w-full shrink-0 pb-4" style={{ animation: 'zoomBounce 0.5s ease-out' }}>
+                <div className="flex flex-col items-center w-full shrink-0 pb-4 bg-black/50 backdrop-blur-sm rounded-3xl p-8 border border-green-500/20" style={{ animation: 'zoomBounce 0.5s ease-out' }}>
                   <div className="text-white/40 text-lg font-bold mb-4">✅ الإجابة الصحيحة:</div>
-                  <div className="text-4xl md:text-5xl font-black text-green-400" style={{ textShadow: '0 0 40px rgba(74,222,128,0.4)' }}>{currentQ.answer}</div>
+                  <div className="text-4xl md:text-5xl font-black text-green-400 mb-6" style={{ textShadow: '0 0 40px rgba(74,222,128,0.4)' }}>{currentQ.answer}</div>
+                  {answeringTeam && (
+                    <div className="flex items-center gap-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/40 px-8 py-4 rounded-2xl shadow-[0_0_30px_rgba(34,197,94,0.3)]">
+                      <Trophy size={24} className="text-green-400" />
+                      <span className="text-white font-black text-xl">أجاب: {answeringTeam}</span>
+                    </div>
+                  )}
                 </div>
               )
             )}
