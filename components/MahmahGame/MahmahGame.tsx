@@ -656,7 +656,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
   // RENDER: MODE SELECT
   // ==========================================
   const renderModeSelect = () => (
-    <div className="flex-1 w-full flex flex-col items-center justify-center p-4 pl-[420px] relative overflow-hidden" style={{ animation: 'fadeIn 0.6s ease-out' }}>
+    <div className="flex-1 w-full flex flex-col items-center justify-center p-4 relative overflow-hidden" style={{ animation: 'fadeIn 0.6s ease-out' }}>
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-20 left-20 w-72 h-72 bg-red-500/10 blur-[120px] rounded-full animate-pulse" />
         <div className="absolute bottom-20 right-20 w-72 h-72 bg-blue-500/10 blur-[120px] rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
@@ -706,7 +706,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
   // RENDER: SETUP
   // ==========================================
   const renderSetup = () => (
-    <div className="flex-1 w-full max-w-5xl mx-auto flex flex-col items-center p-4 pt-8 pl-[420px]" style={{ animation: 'fadeIn 0.5s ease-out' }}>
+    <div className="flex-1 w-full max-w-5xl mx-auto flex flex-col items-center p-4 pt-8" style={{ animation: 'fadeIn 0.5s ease-out' }}>
       <button onClick={() => setStage('mode_select')} className="self-start mb-6 flex items-center gap-2 text-white/40 hover:text-white font-bold transition-colors">
         <ArrowLeft size={18} /> رجوع
       </button>

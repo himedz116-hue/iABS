@@ -726,7 +726,7 @@ const App: React.FC = () => {
 
                 return (
                   <>
-                    <div className="w-full flex justify-center max-w-lg">
+                    <div className="w-full flex justify-center max-w-2xl">
                       {primaryVisible.slice(0, 1).map((game) => (
                         <div key={game.id} className="w-full flex justify-center"
                           style={{
