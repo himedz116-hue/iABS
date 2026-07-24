@@ -135,32 +135,7 @@ export const SafeCode: React.FC<SafeCodeProps> = ({ onHome, isOBS }) => {
         />
       </div>
 
-      {!isOBS && (
-        <div className="absolute top-4 left-4 z-50 flex gap-4 items-center">
-          <button onClick={onHome} className="bg-black/60 p-3 rounded-full hover:bg-red-900/50 transition-colors border border-red-500/30 backdrop-blur-md group" title="الرئيسية">
-            <Lock className="w-6 h-6 text-red-500 group-hover:text-red-400" />
-          </button>
-          
-          <button onClick={() => setShowSettings(true)} className="bg-black/60 p-3 rounded-full hover:bg-red-900/50 transition-colors border border-red-500/30 backdrop-blur-md group" title="الإعدادات">
-            <Settings className="w-6 h-6 text-red-500 group-hover:text-red-400" />
-          </button>
-          
-          {phase === 'PLAYING' && (
-            <div className="flex items-center gap-3 bg-black/60 px-5 py-2.5 rounded-full border border-red-500/30 backdrop-blur-md shadow-lg">
-              <span className={`font-mono text-xl tracking-[0.3em] font-black transition-all duration-300 ${isCodeVisible ? 'text-green-400 drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]' : 'text-gray-400 blur-md select-none'}`}>
-                {targetCode}
-              </span>
-              <button 
-                onMouseEnter={() => setIsCodeVisible(true)}
-                onMouseLeave={() => setIsCodeVisible(false)}
-                className="text-red-500 hover:text-red-400 p-1 border-l border-red-500/30 pl-3"
-              >
-                {isCodeVisible ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+
 
       {phase === 'SETUP' && (
         <motion.div 
@@ -169,6 +144,16 @@ export const SafeCode: React.FC<SafeCodeProps> = ({ onHome, isOBS }) => {
           transition={{ type: "spring", bounce: 0.5 }}
           className="bg-black/60 p-16 rounded-[3rem] border border-red-500/40 flex flex-col items-center gap-8 backdrop-blur-xl z-10 shadow-[0_0_80px_rgba(220,38,38,0.2)] relative overflow-hidden"
         >
+          {!isOBS && (
+            <div className="absolute top-4 left-4 flex gap-3">
+              <button onClick={onHome} className="bg-black/60 p-2.5 rounded-full hover:bg-red-900/50 transition-colors border border-red-500/30 backdrop-blur-md group" title="الرئيسية">
+                <Lock className="w-5 h-5 text-red-500 group-hover:text-red-400" />
+              </button>
+              <button onClick={() => setShowSettings(true)} className="bg-black/60 p-2.5 rounded-full hover:bg-red-900/50 transition-colors border border-red-500/30 backdrop-blur-md group" title="الإعدادات">
+                <Settings className="w-5 h-5 text-red-500 group-hover:text-red-400" />
+              </button>
+            </div>
+          )}
           {/* Decorative elements */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-50" />
           <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 blur-3xl rounded-full" />
@@ -204,12 +189,12 @@ export const SafeCode: React.FC<SafeCodeProps> = ({ onHome, isOBS }) => {
       )}
 
       {phase === 'PLAYING' && (
-        <div className="w-full h-full flex flex-col p-8 z-10 min-h-0">
-          {/* Header */}
+        <div className="w-full h-full flex flex-col p-8 z-10 min-h-0 relative">
+          {/* Header - Left Aligned */}
           <motion.div 
             initial={{ y: -50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="flex justify-center mb-10 shrink-0"
+            className="flex justify-start mb-6 shrink-0"
           >
             <div className="bg-black/50 border border-red-500/40 px-10 py-5 rounded-3xl flex items-center gap-6 backdrop-blur-md shadow-[0_0_30px_rgba(220,38,38,0.2)]">
               <Terminal className="w-10 h-10 text-red-500 animate-pulse" />
@@ -217,9 +202,9 @@ export const SafeCode: React.FC<SafeCodeProps> = ({ onHome, isOBS }) => {
             </div>
           </motion.div>
 
-          <div className="flex-1 flex gap-12 max-w-[90rem] w-full mx-auto min-h-0">
-            {/* Safe Display - Left Side */}
-            <div className="flex-[1.2] flex flex-col items-center justify-center relative min-h-0">
+          <div className="flex-1 flex gap-8 max-w-[90rem] w-full mx-auto min-h-0 flex-row-reverse">
+             {/* Safe Display - Right Side */}
+             <div className="flex-[1.2] flex flex-col items-center justify-center relative min-h-0">
               
               {/* Massive Lock Visualization */}
               <div className="relative group mb-16 shrink-0">
@@ -228,17 +213,16 @@ export const SafeCode: React.FC<SafeCodeProps> = ({ onHome, isOBS }) => {
                   transition={{ duration: 2, repeat: Infinity }}
                   className="absolute inset-0 bg-red-600/30 blur-[100px] rounded-full" 
                 />
-                <div className="bg-black/60 border border-red-500/50 rounded-full w-[22rem] h-[22rem] flex items-center justify-center shadow-[0_0_80px_rgba(220,38,38,0.4)] relative z-10 backdrop-blur-xl">
-                  {/* Rotating outer rings */}
+                 <div className="bg-black/60 border border-red-500/50 rounded-full w-[20rem] h-[20rem] flex items-center justify-center shadow-[0_0_80px_rgba(220,38,38,0.4)] relative z-10 backdrop-blur-xl">
                   <motion.div animate={{ rotate: 360 }} transition={{ duration: 15, repeat: Infinity, ease: "linear" }} className="absolute inset-4 border-[3px] border-dashed border-red-500/30 rounded-full" />
                   <motion.div animate={{ rotate: -360 }} transition={{ duration: 25, repeat: Infinity, ease: "linear" }} className="absolute inset-10 border-2 border-dotted border-red-400/20 rounded-full" />
                   
-                  <Lock className="w-40 h-40 text-red-500 drop-shadow-[0_0_15px_rgba(220,38,38,0.8)]" />
-                  <div className="absolute bottom-16 text-red-500/50 font-mono text-xl tracking-widest">LOCKED</div>
+                  <Lock className="w-24 h-24 text-red-500 drop-shadow-[0_0_15px_rgba(220,38,38,0.8)]" />
+                  <div className="absolute bottom-20 text-red-500/50 font-mono text-xl tracking-widest">LOCKED</div>
                 </div>
               </div>
 
-              {/* Code Slots - Show correct digits when discovered if hints are enabled */}
+              {/* Code Slots */}
               <div className="flex gap-6 text-6xl font-black text-white font-mono bg-black/50 p-8 rounded-[2rem] border border-red-500/30 shadow-[0_0_40px_rgba(0,0,0,0.5)] backdrop-blur-md shrink-0" dir="ltr">
                 {[0, 1, 2, 3].map((i) => {
                   const digit = showHints ? foundDigits[i] : null;
@@ -271,8 +255,8 @@ export const SafeCode: React.FC<SafeCodeProps> = ({ onHome, isOBS }) => {
               </motion.div>
             </div>
 
-            {/* Protocol Log - Right Side */}
-            <div className="flex-1 bg-black/60 border border-red-500/30 rounded-[2rem] p-8 flex flex-col relative backdrop-blur-xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden min-h-0">
+             {/* Protocol Log - Left Side */}
+             <div className="flex-1 bg-black/60 border border-red-500/30 rounded-[2rem] p-6 flex flex-col relative backdrop-blur-xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden max-h-[55%] shrink-0 mt-12">
               <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-transparent via-red-600 to-transparent opacity-70" />
               
               <div className="flex items-center justify-between mb-6 border-b border-red-500/20 pb-4 shrink-0">
@@ -280,13 +264,36 @@ export const SafeCode: React.FC<SafeCodeProps> = ({ onHome, isOBS }) => {
                   <Fingerprint className="w-8 h-8" />
                   LIVE PROTOCOL LOG
                 </h3>
-                <div className="flex items-center gap-2 text-red-400/60 font-mono text-sm">
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                  INTERCEPTING CHAT
+                <div className="flex items-center gap-4">
+                  {!isOBS && (
+                    <>
+                      <button onClick={onHome} className="bg-black/60 p-2.5 rounded-full hover:bg-red-900/50 transition-colors border border-red-500/30 backdrop-blur-md group" title="الرئيسية">
+                        <Lock className="w-5 h-5 text-red-500 group-hover:text-red-400" />
+                      </button>
+                      <button onClick={() => setShowSettings(true)} className="bg-black/60 p-2.5 rounded-full hover:bg-red-900/50 transition-colors border border-red-500/30 backdrop-blur-md group" title="الإعدادات">
+                        <Settings className="w-5 h-5 text-red-500 group-hover:text-red-400" />
+                      </button>
+                      <div className="flex items-center gap-3 bg-black/60 px-5 py-2.5 rounded-full border border-red-500/30 backdrop-blur-md shadow-lg">
+                        <span className={`font-mono text-xl tracking-[0.3em] font-black transition-all duration-300 ${isCodeVisible ? 'text-green-400 drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]' : 'text-gray-400 blur-md select-none'}`}>
+                          {targetCode}
+                        </span>
+                        <button 
+                          onMouseEnter={() => setIsCodeVisible(true)}
+                          onMouseLeave={() => setIsCodeVisible(false)}
+                          className="text-red-500 hover:text-red-400 p-1 border-l border-red-500/30 pl-3"
+                        >
+                          {isCodeVisible ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex items-center gap-2 text-red-400/60 font-mono text-sm">
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                    INTERCEPTING CHAT
+                  </div>
                 </div>
               </div>
               
-              {/* Log Container with min-h-0 to prevent stretching and auto scroll */}
               <div ref={scrollRef} className="flex-1 overflow-y-auto pr-4 flex flex-col gap-4 custom-scrollbar min-h-0">
                 <AnimatePresence initial={false}>
                   {guesses.map((g) => (
@@ -297,7 +304,6 @@ export const SafeCode: React.FC<SafeCodeProps> = ({ onHome, isOBS }) => {
                       exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
                       className="bg-black/80 p-5 rounded-2xl border border-red-900/40 flex items-center justify-between group hover:border-red-500/50 transition-colors relative overflow-hidden shrink-0"
                     >
-                      {/* Scanning effect background */}
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                       
                       <div className="flex items-center gap-4 relative z-10">
