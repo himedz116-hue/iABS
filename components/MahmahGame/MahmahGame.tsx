@@ -637,6 +637,28 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
     }, 4000);
   };
 
+  const selectTeamAnswer = (teamIdx: number) => {
+    if (!currentQ) return;
+    const pts = currentQ.points * fMultiplier;
+    const teamName = teamIdx === 0 ? team1Name : team2Name;
+    setAnsweringTeam(teamName);
+    setTeams(prev => prev.map((t, i) => i === teamIdx ? { ...t, score: t.score + pts } : t));
+    setShowAnswer(true);
+    confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+    setTimeout(() => {
+      closeQuestion();
+    }, 4000);
+  };
+
+  const noOneAnswered = () => {
+    if (!currentQ) return;
+    setAnsweringTeam(null);
+    setShowAnswer(true);
+    setTimeout(() => {
+      closeQuestion();
+    }, 4000);
+  };
+
   const skipTimer = () => {
     if (showAnswer || chatWinner) return;
     if (timerRef.current) clearInterval(timerRef.current);
@@ -1260,12 +1282,17 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
                     </button>
                   </>
                 ) : (
-                  <div className="flex items-center gap-6">
-                    <button onClick={friendsCorrect} className="flex items-center gap-3 bg-gradient-to-r from-green-500 to-green-700 text-white px-14 py-6 rounded-full font-black text-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(34,197,94,0.4)]">
-                      <Check size={28} /> صحيحة
-                    </button>
-                    <button onClick={friendsWrong} className="flex items-center gap-3 bg-gradient-to-r from-red-500 to-red-700 text-white px-14 py-6 rounded-full font-black text-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(239,68,68,0.4)]">
-                      <X size={28} /> خاطئة
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="flex items-center gap-4">
+                      <button onClick={() => selectTeamAnswer(0)} className="flex items-center gap-3 bg-gradient-to-r from-blue-500 to-blue-700 text-white px-14 py-6 rounded-full font-black text-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(59,130,246,0.4)]">
+                        <Users size={28} /> {team1Name}
+                      </button>
+                      <button onClick={() => selectTeamAnswer(1)} className="flex items-center gap-3 bg-gradient-to-r from-red-500 to-red-700 text-white px-14 py-6 rounded-full font-black text-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(239,68,68,0.4)]">
+                        <Users size={28} /> {team2Name}
+                      </button>
+                    </div>
+                    <button onClick={noOneAnswered} className="flex items-center gap-3 bg-gradient-to-r from-gray-500 to-gray-700 text-white px-14 py-4 rounded-full font-black text-xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(107,114,128,0.4)]">
+                      <X size={24} /> ولا حد جابها
                     </button>
                   </div>
                 )}
