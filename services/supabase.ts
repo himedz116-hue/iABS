@@ -20,17 +20,44 @@ if (isConfigured) {
 const SUPABASE_URL = URL_VAL || 'https://placeholder.supabase.co';
 const SUPABASE_KEY = KEY_VAL || 'placeholder';
 
-// Create a safe client even if data is missing
-export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  db: { schema: 'public' },
+  global: {
+    headers: { 'x-client-info': 'iabs-web' },
+    fetch: (...args: any[]) => {
+      const [url, options] = args;
+      return fetch(url, { ...options, keepalive: true });
+    },
+  },
+  auth: { persistSession: false, autoRefreshToken: true },
+});
 
-// Helper to handle all service calls safely
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+export const supabaseQuery = async <T>(
+  queryFn: () => Promise<T>,
+  retries = 3,
+  delayMs = 1000
+): Promise<T> => {
+  let lastError: any;
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await queryFn();
+    } catch (e) {
+      lastError = e;
+      console.warn(`[Supabase] Query failed (attempt ${i + 1}/${retries}):`, e);
+      if (i < retries - 1) await sleep(delayMs * Math.pow(2, i));
+    }
+  }
+  throw lastError;
+};
+
 const safeCall = async (query: any, fallback: any = { data: [], error: null }) => {
   if (!isConfigured) return fallback;
   try {
-    const { data, error } = await query;
-    return { data: data || [], error };
+    return await supabaseQuery(() => query, 3, 800);
   } catch (e) {
-    console.warn('Supabase service error:', e);
+    console.warn('Supabase service error after retries:', e);
     return fallback;
   }
 };
@@ -120,13 +147,11 @@ export const adminService = {
 export const leaderboardService = {
   async getTopPlayers(limit = 20) {
     if (!isConfigured) return [];
-    const { data, error } = await supabase
-      .from('leaderboard')
-      .select('*, profiles(avatar_url, is_banned, credits)')
-      .order('score', { ascending: false })
-      .limit(limit);
-    if (error) return [];
-    return (data || []).map(item => ({
+    const result = await safeCall(
+      supabase.from('leaderboard').select('*, profiles(avatar_url, is_banned, credits)').order('score', { ascending: false }).limit(limit),
+      { data: [], error: null }
+    );
+    return (result.data || []).map((item: any) => ({
       ...item,
       avatar_url: item.profiles?.avatar_url || item.avatar_url,
       is_banned: item.profiles?.is_banned,
@@ -135,13 +160,11 @@ export const leaderboardService = {
   },
   async getPlayersWithPoints() {
     if (!isConfigured) return [];
-    const { data, error } = await supabase
-      .from('leaderboard')
-      .select('*, profiles(avatar_url, is_banned, credits)')
-      .or('score.gt.0,wins.gt.0')
-      .order('score', { ascending: false });
-    if (error) return [];
-    return (data || []).map(item => ({
+    const result = await safeCall(
+      supabase.from('leaderboard').select('*, profiles(avatar_url, is_banned, credits)').or('score.gt.0,wins.gt.0').order('score', { ascending: false }),
+      { data: [], error: null }
+    );
+    return (result.data || []).map((item: any) => ({
       ...item,
       avatar_url: item.profiles?.avatar_url || item.avatar_url,
       is_banned: item.profiles?.is_banned,
@@ -151,14 +174,12 @@ export const leaderboardService = {
   async getAllRankedPlayers() {
     if (!isConfigured) return [];
     try {
-      const { data: lb } = await supabase
-        .from('leaderboard')
-        .select('*, profiles(avatar_url, is_banned, credits, active_frame_url)')
-        .order('score', { ascending: false });
-      const { data: profs } = await supabase
-        .from('profiles')
-        .select('*')
-        .gt('credits', 0);
+      const [lbResult, profsResult] = await Promise.all([
+        supabaseQuery(() => supabase.from('leaderboard').select('*, profiles(avatar_url, is_banned, credits, active_frame_url)').order('score', { ascending: false }), 3, 1000),
+        supabaseQuery(() => supabase.from('profiles').select('*').gt('credits', 0), 3, 1000),
+      ]);
+      const lb = lbResult.data;
+      const profs = profsResult.data;
       const byUser: Record<string, any> = {};
       (lb || []).forEach(item => {
         byUser[item.username] = {

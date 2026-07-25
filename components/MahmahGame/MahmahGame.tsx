@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { chatService } from '../../services/chatService';
-import { supabase } from '../../services/supabase';
+import { supabase, supabaseQuery } from '../../services/supabase';
 import { FortuneWheelModal } from './FortuneWheelModal';
 import { ProAvatar } from '../ProAvatar';
 import { Home, Users, MessageCircle, Play, Trophy, Check, X, Shield, FastForward, Eye, Star, Crown, Zap, ArrowLeft, Sparkles, Volume2, Award } from 'lucide-react';
@@ -149,31 +149,40 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
 
   useEffect(() => {
     const fetchMahmahData = async () => {
-      const { data: cData } = await supabase.from('mahmah_categories').select('*').order('created_at', { ascending: false });
-      const { data: qData } = await supabase.from('mahmah_questions').select('*');
-      
-      if (cData && qData) {
-        const fullCats: MahmahCategory[] = cData.map(c => {
-          const catQs = qData.filter(q => q.category_id === c.id);
-          const gradients = ['from-green-500 to-emerald-700', 'from-blue-500 to-indigo-700', 'from-red-500 to-rose-700', 'from-yellow-500 to-orange-700', 'from-purple-500 to-fuchsia-700', 'from-cyan-500 to-blue-700'];
-          return {
-            ...c,
-            gradient: gradients[Math.floor(Math.random() * gradients.length)],
-            questions: catQs
-          };
-        });
+      try {
+        const [cResult, qResult] = await Promise.all([
+          supabaseQuery(() => supabase.from('mahmah_categories').select('*').order('created_at', { ascending: false }), 3, 1000),
+          supabaseQuery(() => supabase.from('mahmah_questions').select('*'), 3, 1000),
+        ]);
+        const cData = cResult.data;
+        const qData = qResult.data;
+        
+        if (cData && qData) {
+          const fullCats: MahmahCategory[] = cData.map(c => {
+            const catQs = qData.filter(q => q.category_id === c.id);
+            const gradients = ['from-green-500 to-emerald-700', 'from-blue-500 to-indigo-700', 'from-red-500 to-rose-700', 'from-yellow-500 to-orange-700', 'from-purple-500 to-fuchsia-700', 'from-cyan-500 to-blue-700'];
+            return {
+              ...c,
+              gradient: gradients[Math.floor(Math.random() * gradients.length)],
+              questions: catQs
+            };
+          });
 
-        const normOrder = CUSTOM_ORDER.map(normalizeText);
-        fullCats.sort((a, b) => {
-          let aIdx = normOrder.findIndex(n => normalizeText(a.name) === n);
-          let bIdx = normOrder.findIndex(n => normalizeText(b.name) === n);
-          if (aIdx === -1) aIdx = 999;
-          if (bIdx === -1) bIdx = 999;
-          if (aIdx !== bIdx) return aIdx - bIdx;
-          return a.name.localeCompare(b.name);
-        });
+          const normOrder = CUSTOM_ORDER.map(normalizeText);
+          fullCats.sort((a, b) => {
+            let aIdx = normOrder.findIndex(n => normalizeText(a.name) === n);
+            let bIdx = normOrder.findIndex(n => normalizeText(b.name) === n);
+            if (aIdx === -1) aIdx = 999;
+            if (bIdx === -1) bIdx = 999;
+            if (aIdx !== bIdx) return aIdx - bIdx;
+            return a.name.localeCompare(b.name);
+          });
 
-        setDbCategories(fullCats);
+          setDbCategories(fullCats);
+        }
+      } catch (e) {
+        console.warn('[Mahmah] Failed to load data, retrying in 3s...', e);
+        setTimeout(fetchMahmahData, 3000);
       }
     };
     fetchMahmahData();

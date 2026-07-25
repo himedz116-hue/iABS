@@ -9,7 +9,7 @@ import {
   Users2, Gavel, Radio, LayoutDashboard, Terminal, X, Clock, LogOut, ShoppingBag, Edit, Plus, Upload, Brain, Bot
 } from 'lucide-react';
 import { uploadToCloudinary } from '../services/cloudinaryService';
-import { leaderboardService, adminService, supabase } from '../services/supabase';
+import { leaderboardService, adminService, supabase, supabaseQuery } from '../services/supabase';
 import { chatService } from '../services/chatService';
 import { ProAvatar } from './ProAvatar';
 import { BotDashboard } from './BotDashboard';
@@ -160,17 +160,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
       if (activeTab === 'announcements') { const { data } = await adminService.getAnnouncements(); setAnnouncements(data); }
       if (activeTab === 'logs') { const { data } = await adminService.getAuditLogs(); setLogs(data); }
       if (activeTab === 'arena') { const { status } = await adminService.getArenaStatus(); setArenaStatus(status); }
-      if (activeTab === 'store') { const { data } = await supabase.from('store_items').select('*').order('type', { ascending: true }).order('price', { ascending: true }); setStoreItems(data || []); }
+      if (activeTab === 'store') { const result = await supabaseQuery(() => supabase.from('store_items').select('*').order('type', { ascending: true }).order('price', { ascending: true })); setStoreItems(result.data || []); }
       if (activeTab === 'mahmah') {
-        const { data: cData } = await supabase.from('mahmah_categories').select('*').order('created_at', { ascending: false });
-        if (cData) setMahmahCategories(cData);
-        const { data: qData } = await supabase.from('mahmah_questions').select('*').order('created_at', { ascending: true });
-        if (qData) setMahmahQuestions(qData);
+        const [cResult, qResult] = await Promise.all([
+          supabaseQuery(() => supabase.from('mahmah_categories').select('*').order('created_at', { ascending: false })),
+          supabaseQuery(() => supabase.from('mahmah_questions').select('*').order('created_at', { ascending: true })),
+        ]);
+        if (cResult.data) setMahmahCategories(cResult.data);
+        if (qResult.data) setMahmahQuestions(qResult.data);
       }
-      if (activeTab === 'higher_lower') {
-        const { data: hlData } = await supabase.from('higher_lower_questions').select('*').order('stage_number', { ascending: true }).order('id', { ascending: true });
-        if (hlData) setHlQuestions(hlData);
-      }
+      if (activeTab === 'higher_lower') { const result = await supabaseQuery(() => supabase.from('higher_lower_questions').select('*').order('stage_number', { ascending: true }).order('id', { ascending: true })); if (result.data) setHlQuestions(result.data); }
     } catch (e) { console.error(e); }
     setIsLoading(false);
   };

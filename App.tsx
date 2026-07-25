@@ -235,23 +235,38 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Better Real-time listener
-    const channel = supabase
-      .channel('announcements_realtime')
-      .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'announcements' },
-        (payload) => {
-          console.log('SURPRISE! New announcement:', payload.new.content);
-          setActiveAnnouncement(payload.new.content);
-          playNotificationSound();
-        }
-      )
-      .subscribe((status) => {
-        console.log('Announcement subscription status:', status);
-      });
+    let retryTimer: any;
+    let isActive = true;
+
+    const connectAnnouncements = () => {
+      if (!isActive) return;
+      const channel = supabase
+        .channel('announcements_realtime')
+        .on('postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'announcements' },
+          (payload) => {
+            console.log('SURPRISE! New announcement:', payload.new.content);
+            setActiveAnnouncement(payload.new.content);
+            playNotificationSound();
+          }
+        )
+        .subscribe((status) => {
+          console.log('Announcement subscription status:', status);
+          if (status === 'CHANNEL_ERROR' && isActive) {
+            console.warn('[App] Announcements channel error, reconnecting in 3s...');
+            retryTimer = setTimeout(connectAnnouncements, 3000);
+          }
+        });
+
+      return channel;
+    };
+
+    const channel = connectAnnouncements();
 
     return () => {
-      supabase.removeChannel(channel);
+      isActive = false;
+      clearTimeout(retryTimer);
+      if (channel) supabase.removeChannel(channel);
     };
   }, []);
 
@@ -259,6 +274,8 @@ const App: React.FC = () => {
     if (!silent) setIsLoadingLeaderboard(true);
     leaderboardService.getAllRankedPlayers().then(data => {
       setLeaderboardData(data);
+      if (!silent) setIsLoadingLeaderboard(false);
+    }).catch(() => {
       if (!silent) setIsLoadingLeaderboard(false);
     });
   };
@@ -271,13 +288,29 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (currentView === 'LEADERBOARD') {
-      const channel = supabase.channel('leaderboard_updates')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'leaderboard' }, () => loadLeaderboard(true))
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => loadLeaderboard(true))
-        .subscribe();
+      let retryTimer: any;
+      let isActive = true;
+
+      const connectLeaderboard = () => {
+        if (!isActive) return;
+        const channel = supabase.channel('leaderboard_updates')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'leaderboard' }, () => loadLeaderboard(true))
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => loadLeaderboard(true))
+          .subscribe((status) => {
+            if (status === 'CHANNEL_ERROR' && isActive) {
+              console.warn('[App] Leaderboard channel error, reconnecting in 3s...');
+              retryTimer = setTimeout(connectLeaderboard, 3000);
+            }
+          });
+        return channel;
+      };
+
+      const channel = connectLeaderboard();
 
       return () => {
-        supabase.removeChannel(channel);
+        isActive = false;
+        clearTimeout(retryTimer);
+        if (channel) supabase.removeChannel(channel);
       };
     }
   }, [currentView]);
