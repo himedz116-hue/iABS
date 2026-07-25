@@ -11,7 +11,22 @@ import confetti from 'canvas-confetti';
 // TYPES
 // ==========================================
 type GameMode = 'chat' | 'friends';
-type Stage = 'mode_select' | 'setup' | 'playing' | 'question';
+type Stage = 'mode_select' | 'setup' | 'stage_select' | 'playing' | 'question';
+
+const QUESTIONS_PER_STAGE = 6;
+const STAGE_POINTS = [100, 100, 300, 300, 600, 600];
+
+const getStageCount = (questionCount: number): number => Math.floor(questionCount / QUESTIONS_PER_STAGE);
+
+const getStagePointLabel = (idx: number): string => idx < 2 ? '100' : idx < 4 ? '300' : '600';
+
+const buildStageQuestions = (questions: MahmahQuestion[], stageIdx: number): MahmahQuestion[] => {
+  const sorted = [...questions].sort((a, b) => (a.order_number || 1) - (b.order_number || 1));
+  const start = stageIdx * QUESTIONS_PER_STAGE;
+  const slice = sorted.slice(start, start + QUESTIONS_PER_STAGE);
+  if (slice.length < QUESTIONS_PER_STAGE) return [];
+  return slice.map((q, i) => ({ ...q, points: STAGE_POINTS[i] || 600 }));
+};
 type ChatSide = 'chat' | 'streamer';
 
 const CUSTOM_ORDER = [
@@ -38,12 +53,17 @@ export interface MahmahCategory {
   image_url: string;
   gradient?: string;
   questions: MahmahQuestion[];
+  level?: 'الأول' | 'الثاني' | 'الثالث' | 'الرابع';
+  levelLabel?: string;
+  levelBadge?: string;
+  parentCategoryId?: string;
 }
 
 export interface MahmahQuestion {
   id: string;
   category_id?: string;
   points: number;
+  order_number: number;
   text: string;
   answer: string;
   media_url?: string;
@@ -123,6 +143,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
   const [stage, setStage] = useState<Stage>('mode_select');
   const [mode, setMode] = useState<GameMode>('chat');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedStages, setSelectedStages] = useState<Record<string, number[]>>({});
   const [activeCategories, setActiveCategories] = useState<MahmahCategory[]>([]);
   const [dbCategories, setDbCategories] = useState<MahmahCategory[]>([]);
 
@@ -258,7 +279,28 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
   // START GAME
   // ==========================================
   const startGame = () => {
-    const cats = dbCategories.filter(c => selectedCategories.includes(c.id)).slice(0, 6);
+    const expandedCats: MahmahCategory[] = [];
+    selectedCategories.forEach(catId => {
+      const cat = dbCategories.find(c => c.id === catId);
+      if (!cat) return;
+      const stages = selectedStages[catId] || [];
+      const stageCount = getStageCount(cat.questions?.length || 0);
+      const stagesToUse = stages.length > 0 ? stages : Array.from({ length: stageCount }, (_, i) => i);
+      stagesToUse.forEach(stageIdx => {
+        const stageQs = buildStageQuestions(cat.questions || [], stageIdx);
+        if (stageQs.length === 0) return;
+        expandedCats.push({
+          ...cat,
+          id: `${cat.id}__stage_${stageIdx}`,
+          name: cat.name,
+          questions: stageQs,
+          level: `مرحلة ${stageIdx + 1}` as any,
+          levelLabel: `${stageIdx + 1}`,
+          parentCategoryId: cat.id,
+        });
+      });
+    });
+    const cats = expandedCats.slice(0, 12);
     setActiveCategories(cats);
     setAnsweredQs(new Set());
     setCurrentQ(null);
@@ -277,7 +319,6 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
         { id: 't2', name: team2Name || 'الفريق 2', score: 0, color: 'text-red-400', bgColor: 'bg-red-600' }
       ]);
       setActiveTeamIdx(0);
-      // Reset helper usage tracking for new game
       setFMultiplierUsed(false);
       setFBlockedUsed(false);
       setFStolenUsed(false);
@@ -778,6 +819,8 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl w-full mx-auto">
         {[...dbCategories].sort((a, b) => (selectedCategories.includes(b.id) ? 1 : 0) - (selectedCategories.includes(a.id) ? 1 : 0)).map((cat, i) => {
           const isSelected = selectedCategories.includes(cat.id);
+          const totalQuestions = cat.questions?.length || 0;
+          const numStages = getStageCount(totalQuestions);
           return (
             <button key={cat.id} onClick={() => toggleCategory(cat.id)}
               className={`relative p-6 rounded-3xl border-2 transition-all overflow-hidden group flex flex-col items-center gap-3 ${isSelected ? 'border-yellow-500 bg-yellow-500/10' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}>
@@ -790,7 +833,20 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
                 )}
               </div>
               <div className="font-black text-white text-lg">{cat.name}</div>
-              <div className="text-xs text-white/50 font-bold">{cat.questions?.length || 0} أسئلة متاحة</div>
+              <div className="flex flex-col items-center gap-1">
+                <div className="text-xs text-white/50 font-bold">{totalQuestions} أسئلة</div>
+                {numStages > 0 && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                      <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                      {numStages} {numStages === 1 ? 'مرحلة' : 'مراحل'}
+                    </span>
+                  </div>
+                )}
+                {numStages === 0 && (
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-white/10 text-white/40 border border-white/10">أقل من 6 أسئلة</span>
+                )}
+              </div>
               <div className={`absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r ${cat.gradient || 'from-zinc-500 to-zinc-700'} ${isSelected ? 'opacity-100' : 'opacity-30'} transition-opacity`} />
             </button>
           );
@@ -802,12 +858,156 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
 
       <div className="flex items-center gap-2 text-yellow-500 font-black text-lg mb-6"><Star size={20} /> {selectedCategories.length} / 6</div>
 
-      <button onClick={startGame} disabled={selectedCategories.length === 0}
+      <button onClick={() => {
+        const initStages: Record<string, number[]> = {};
+        selectedCategories.forEach(catId => { initStages[catId] = []; });
+        setSelectedStages(initStages);
+        setStage('stage_select');
+      }} disabled={selectedCategories.length === 0}
         className="bg-gradient-to-r from-red-600 to-red-800 text-white font-black text-xl italic px-12 py-4 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_40px_rgba(255,0,0,0.3)] flex items-center gap-3">
-        <Play size={24} /> ابدأ اللعبة!
+        <Play size={24} /> ادامه
       </button>
     </div>
   );
+
+  // ==========================================
+  // RENDER: STAGE SELECT
+  // ==========================================
+  const toggleStage = (catId: string, stageIdx: number) => {
+    setSelectedStages(prev => {
+      const current = prev[catId] || [];
+      const next = current.includes(stageIdx) ? current.filter(i => i !== stageIdx) : [...current, stageIdx];
+      return { ...prev, [catId]: next };
+    });
+  };
+
+  const totalSelectedStages = Object.values(selectedStages).reduce((sum, arr) => sum + arr.length, 0);
+
+  const renderStageSelect = () => {
+    const selectedCats = dbCategories.filter(c => selectedCategories.includes(c.id));
+    const playableCats = selectedCats.filter(c => getStageCount(c.questions?.length || 0) > 0);
+    const unplayableCats = selectedCats.filter(c => getStageCount(c.questions?.length || 0) <= 0);
+
+    if (playableCats.length === 0) {
+      return (
+        <div className="flex-1 w-full max-w-5xl mx-auto flex flex-col items-center justify-center p-4 pt-20" style={{ animation: 'fadeIn 0.5s ease-out' }}>
+          <button onClick={() => setStage('setup')} className="self-start mb-4 flex items-center gap-2 text-white/40 hover:text-white font-bold transition-colors">
+            <ArrowLeft size={18} /> رجوع
+          </button>
+          <div className="text-red-400 font-black text-2xl mb-4">لا توجد فئات مؤهلة</div>
+          <div className="text-white/40 font-bold">كل الفئات المختارة فيها أقل من 6 أسئلة</div>
+          <button onClick={() => setStage('setup')} className="mt-6 bg-white/10 text-white px-8 py-3 rounded-2xl font-black hover:bg-white/15 transition-all">
+            رجوع واختيار فئات
+          </button>
+        </div>
+      );
+    }
+
+    // Min stages across all playable categories
+    const minStages = playableCats.reduce((min, c) => Math.min(min, getStageCount(c.questions?.length || 0)), Infinity);
+    // Current selected stage index (-1 = none)
+    const currentStage = selectedStages[playableCats[0]?.id]?.[0] ?? -1;
+
+    const selectStage = (stageIdx: number) => {
+      setSelectedStages(prev => {
+        const next: Record<string, number[]> = {};
+        playableCats.forEach(cat => {
+          const numStages = getStageCount(cat.questions?.length || 0);
+          if (stageIdx < numStages) {
+            next[cat.id] = [stageIdx];
+          } else {
+            next[cat.id] = [];
+          }
+        });
+        return next;
+      });
+    };
+
+    return (
+      <div className="flex-1 w-full max-w-5xl mx-auto flex flex-col items-center p-4 pt-20 overflow-y-auto" style={{ animation: 'fadeIn 0.5s ease-out' }}>
+        <button onClick={() => setStage('setup')} className="self-start mb-4 flex items-center gap-2 text-white/40 hover:text-white font-bold transition-colors">
+          <ArrowLeft size={18} /> رجوع
+        </button>
+
+        <div className="relative mb-4">
+          <div className="absolute -inset-6 bg-amber-500/15 blur-[50px] rounded-full" />
+          <h2 className="relative text-4xl font-black italic text-white tracking-tighter" style={{ textShadow: '0 0 30px rgba(245,158,11,0.3)' }}>
+            ⚡ اختر المرحلة
+          </h2>
+        </div>
+        <p className="text-white/40 font-bold mb-10 text-center">كل مرحلة = 6 أسئلة | 2×100 + 2×300 + 2×600</p>
+
+        {/* Stage Buttons */}
+        <div className="flex items-center justify-center gap-4 mb-8" style={{ animation: 'slideUp 0.5s ease-out' }}>
+          {Array.from({ length: minStages }, (_, i) => {
+            const active = currentStage === i;
+            return (
+              <button key={i} onClick={() => selectStage(i)}
+                className={`relative flex flex-col items-center gap-3 px-8 py-6 rounded-3xl border-2 transition-all duration-300 min-w-[140px] ${active ? 'border-amber-400 bg-amber-500/15 shadow-[0_0_40px_rgba(245,158,11,0.2)] scale-105' : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'}`}>
+                {active && (
+                  <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-amber-400/10 to-transparent pointer-events-none" />
+                )}
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-xl transition-all ${active ? 'bg-amber-500/25 text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.3)]' : 'bg-white/10 text-white/50'}`}>
+                  {i + 1}
+                </div>
+                <span className={`font-black text-lg ${active ? 'text-amber-300' : 'text-white/60'}`}>المرحلة {i + 1}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded bg-white/10 text-white/50">2×100</span>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">2×300</span>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">2×600</span>
+                </div>
+                {active && <div className="absolute top-3 right-3"><Check size={18} className="text-amber-400" /></div>}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Selected stage info */}
+        {currentStage >= 0 && (
+          <div className="w-full max-w-3xl mb-8" style={{ animation: 'slideUp 0.3s ease-out' }}>
+            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
+              <div className="text-amber-300 font-black text-center mb-3">✓ المرحلة {currentStage + 1} محددة لـ {playableCats.length} فئات</div>
+              <div className="flex flex-wrap justify-center gap-2">
+                {playableCats.filter(c => currentStage < getStageCount(c.questions?.length || 0)).map(cat => (
+                  <div key={cat.id} className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-xl">
+                    <div className="w-5 h-5 rounded overflow-hidden bg-black/30 flex items-center justify-center shrink-0">
+                      {cat.image_url ? <img src={cat.image_url} alt="" className="w-full h-full object-cover" /> : null}
+                    </div>
+                    <span className="text-white font-bold text-xs">{cat.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Unplayable categories */}
+        {unplayableCats.length > 0 && (
+          <div className="w-full max-w-3xl mb-6">
+            <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4">
+              <div className="text-red-400/70 font-bold text-xs mb-2 flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-red-400" />
+                فئات بدون مراحل كافية (أقل من 6 أسئلة — لن تُلعب)
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {unplayableCats.map(cat => (
+                  <div key={cat.id} className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-xl opacity-60">
+                    <span className="text-white/60 font-bold text-xs line-through">{cat.name}</span>
+                    <span className="text-red-300/60 text-[10px] font-black">{cat.questions?.length || 0}/6</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <button onClick={startGame} disabled={currentStage < 0}
+          className={`font-black text-xl italic px-12 py-4 rounded-2xl transition-all shadow-lg flex items-center gap-3 ${currentStage >= 0 ? 'bg-gradient-to-r from-red-600 to-red-800 text-white hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(255,0,0,0.3)]' : 'bg-white/10 text-white/30 cursor-not-allowed'}`}>
+          <Play size={24} /> ابدأ اللعبة!
+        </button>
+      </div>
+    );
+  };
 
   // ==========================================
   // RENDER: BOARD (Unified)
@@ -829,36 +1029,58 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
         </div>
 
         {/* Jeopardy Grid */}
-        <div className="flex-1 grid gap-3" style={{ gridTemplateColumns: `repeat(${activeCategories.length}, 1fr)` }}>
-          {activeCategories.map((cat) => (
-            <div key={cat.id} className="flex flex-col gap-2 h-full">
+        <div className="flex-1 grid gap-2" style={{ gridTemplateColumns: `repeat(${activeCategories.length}, 1fr)` }}>
+          {activeCategories.map((cat) => {
+            const stageNum = parseInt((cat.levelLabel || 'مرحلة 1').replace('مرحلة ', '')) || 1;
+            const isMultiStage = activeCategories.some(c => c.parentCategoryId === cat.parentCategoryId && c.id !== cat.id);
+            return (
+            <div key={cat.id} className="flex flex-col gap-1.5 h-full">
               {/* Category Header */}
-              <div className="bg-gradient-to-b from-white/10 to-white/5 border border-white/10 rounded-xl p-3 flex flex-col items-center justify-center text-center shadow-lg h-24 relative overflow-hidden group">
-                <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${cat.gradient || 'from-zinc-500 to-zinc-700'}`} />
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-1 shadow-inner overflow-hidden">
+              <div className="bg-gradient-to-b from-white/10 to-white/5 border border-amber-500/30 rounded-xl p-2 flex flex-col items-center justify-center text-center shadow-lg h-[90px] relative overflow-hidden group">
+                <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${cat.gradient || 'from-amber-400 to-yellow-500'}`} />
+                <div className="absolute -top-0.5 -right-0.5">
+                  <div className="bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-[10px] font-black px-2.5 py-0.5 rounded-bl-xl rounded-tr-xl">
+                    {stageNum}
+                  </div>
+                </div>
+                <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center mb-1 shadow-inner overflow-hidden">
                   {cat.image_url ? <img src={cat.image_url} alt="" className="w-full h-full object-cover" /> : <span className="text-white/50">?</span>}
                 </div>
-                <h3 className="text-white font-black text-xs leading-tight">{cat.name}</h3>
+                <h3 className="text-white font-black text-[11px] leading-tight">{cat.name}</h3>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <span className="bg-amber-500/20 text-amber-300 text-[9px] font-black px-2 py-0.5 rounded-full border border-amber-500/30">
+                    المرحلة {stageNum}
+                  </span>
+                </div>
               </div>
               
               {/* Question Boxes */}
-              <div className="flex flex-col gap-2 flex-1">
+              <div className="flex flex-col gap-1 flex-1">
                 {[...cat.questions].sort((a,b) => a.points - b.points).map((q, idx) => {
                   const done = answeredQs.has(q.id);
+                  const isPremium = q.points >= 600;
+                  const isMid = q.points >= 300 && q.points < 600;
                   return (
                     <button key={q.id} onClick={() => !done && selectQuestion(q)} disabled={done}
-                      className={`flex-1 min-h-[60px] rounded-xl flex flex-col items-center justify-center font-black transition-all duration-300 relative overflow-hidden
-                        ${done ? 'bg-black/40 text-white/10 border border-white/5 cursor-not-allowed opacity-50' 
-                               : 'bg-gradient-to-br from-[#1E293B] to-[#0F172A] text-yellow-400 border border-white/10 hover:border-yellow-500/50 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(234,179,8,0.2)] cursor-pointer group'}
+                      className={`flex-1 min-h-[48px] rounded-xl flex flex-col items-center justify-center font-black transition-all duration-300 relative overflow-hidden
+                        ${done 
+                          ? 'bg-black/40 text-white/10 border border-white/5 cursor-not-allowed opacity-50' 
+                          : isPremium
+                            ? 'bg-gradient-to-br from-amber-900/40 to-amber-950/60 text-amber-300 border border-amber-500/30 hover:border-amber-400/60 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] cursor-pointer group'
+                            : isMid
+                              ? 'bg-gradient-to-br from-emerald-900/30 to-emerald-950/50 text-emerald-300 border border-emerald-500/25 hover:border-emerald-400/50 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] cursor-pointer group'
+                              : 'bg-gradient-to-br from-[#1E293B] to-[#0F172A] text-slate-300 border border-white/10 hover:border-white/30 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,255,255,0.08)] cursor-pointer group'
+                        }
                       `}>
                       {!done && <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />}
-                      <span className="text-2xl md:text-3xl italic tracking-tighter relative z-10">{done ? '✓' : q.points}</span>
+                      <span className="text-lg md:text-xl italic tracking-tighter relative z-10">{done ? '✓' : q.points}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -1327,6 +1549,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
     <div className="w-full h-full flex flex-col">
       {stage === 'mode_select' && renderModeSelect()}
       {stage === 'setup' && renderSetup()}
+      {stage === 'stage_select' && renderStageSelect()}
       {stage === 'playing' && renderBoard()}
       {stage === 'question' && renderQuestionModal()}
 

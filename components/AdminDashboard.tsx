@@ -37,7 +37,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [isAddingMahmahCategory, setIsAddingMahmahCategory] = useState(false);
   const [isAddingMahmahQuestion, setIsAddingMahmahQuestion] = useState(false);
   const [newMahmahCategory, setNewMahmahCategory] = useState({ name: '', image_url: '' });
-  const [newMahmahQuestion, setNewMahmahQuestion] = useState({ points: 100, text: '', answer: '', media_url: '', media_type: '' as string, answer_media_url: '', answer_media_type: '' as string });
+  const [newMahmahQuestion, setNewMahmahQuestion] = useState({ points: 100, order_number: 1, text: '', answer: '', media_url: '', media_type: '' as string, answer_media_url: '', answer_media_type: '' as string });
   const [uploadingQuestionMedia, setUploadingQuestionMedia] = useState(false);
   const [uploadingAnswerImage, setUploadingAnswerImage] = useState(false);
   
@@ -277,12 +277,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     e.preventDefault();
     if (!selectedMahmahCategory || !newMahmahQuestion.text || !newMahmahQuestion.answer) return showStatus('يرجى ملء جميع الحقول', true);
     setIsLoading(true);
-    const insertData: any = { category_id: selectedMahmahCategory.id, points: newMahmahQuestion.points, text: newMahmahQuestion.text, answer: newMahmahQuestion.answer };
+    const insertData: any = { category_id: selectedMahmahCategory.id, points: newMahmahQuestion.points, order_number: newMahmahQuestion.order_number, text: newMahmahQuestion.text, answer: newMahmahQuestion.answer };
     if (newMahmahQuestion.media_url) { insertData.media_url = newMahmahQuestion.media_url; insertData.media_type = newMahmahQuestion.media_type || 'image'; }
     if (newMahmahQuestion.answer_media_url) { insertData.answer_media_url = newMahmahQuestion.answer_media_url; insertData.answer_media_type = newMahmahQuestion.answer_media_type || 'image'; }
     const { error } = await supabase.from('mahmah_questions').insert([insertData]);
     if (error) showStatus('خطأ في الإضافة: ' + error.message, true);
-    else { showStatus('تمت الإضافة بنجاح'); setIsAddingMahmahQuestion(false); setNewMahmahQuestion({ points: 100, text: '', answer: '', media_url: '', media_type: '', answer_media_url: '', answer_media_type: '' }); fetchData(); }
+    else { showStatus('تمت الإضافة بنجاح'); setIsAddingMahmahQuestion(false); setNewMahmahQuestion({ points: 100, order_number: 1, text: '', answer: '', media_url: '', media_type: '', answer_media_url: '', answer_media_type: '' }); fetchData(); }
     setIsLoading(false);
   };
 
@@ -301,6 +301,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     const { error } = await supabase.from('mahmah_questions').delete().eq('id', id);
     if (error) showStatus('خطأ في الحذف: ' + error.message, true);
     else { showStatus('تم الحذف بنجاح'); fetchData(); }
+    setIsLoading(false);
+  };
+
+  const handleUpdateMahmahOrder = async (id: string, newOrder: number) => {
+    setIsLoading(true);
+    const { error } = await supabase.from('mahmah_questions').update({ order_number: newOrder }).eq('id', id);
+    if (error) showStatus('خطأ في التعديل: ' + error.message, true);
+    else { showStatus('تم التعديل بنجاح'); fetchData(); }
     setIsLoading(false);
   };
 
@@ -1086,6 +1094,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                           </div>
                         </div>
                         <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">رقم السؤال في المرحلة (1-6)</label>
+                          <div className="flex gap-2">
+                            {[1,2,3,4,5,6].map(n => {
+                              const active = newMahmahQuestion.order_number === n;
+                              const ptsLabel = n <= 2 ? '100' : n <= 4 ? '300' : '600';
+                              return (
+                                <button key={n} type="button" onClick={() => setNewMahmahQuestion({ ...newMahmahQuestion, order_number: n })}
+                                  className={`flex-1 py-3 rounded-xl border-2 font-black text-lg transition-all ${active ? 'border-indigo-500 bg-indigo-500/10 text-indigo-400' : 'border-white/10 bg-black/50 text-zinc-500 hover:border-white/30'}`}>
+                                  {n}
+                                  <span className="block text-[10px] font-bold opacity-60">{ptsLabel}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div>
                           <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">نص السؤال</label>
                           <input type="text" value={newMahmahQuestion.text} onChange={e => setNewMahmahQuestion({ ...newMahmahQuestion, text: e.target.value })}
                             className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold placeholder-white/20 focus:outline-none focus:border-indigo-500 transition-all"
@@ -1213,7 +1237,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                     <table className="w-full text-right border-collapse">
                       <thead>
                         <tr className="bg-black/50 text-zinc-500 text-xs font-black uppercase tracking-widest">
-                          <th className="p-4 pl-0">النقاط</th>
+                          <th className="p-4 pl-0">رقم / نقاط</th>
                           <th className="p-4">السؤال</th>
                           <th className="p-4">ميديا</th>
                           <th className="p-4">الإجابة</th>
@@ -1221,12 +1245,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5 font-bold text-sm">
-                        {mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id).sort((a,b) => a.points - b.points).map(q => (
+                        {mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id).sort((a,b) => (a.order_number || 1) - (b.order_number || 1)).map(q => (
                           <tr key={q.id} className="hover:bg-white/[0.02] transition-colors">
                             <td className="p-4 pl-0">
-                              <span className={`px-3 py-1 rounded-full text-xs font-black ${q.points === 100 ? 'bg-green-500/20 text-green-400 border border-green-500/30' : q.points === 300 ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
-                                {q.points}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <select value={q.order_number || 1} onChange={e => handleUpdateMahmahOrder(q.id, parseInt(e.target.value))}
+                                  className={`w-14 text-center py-1 rounded-lg border text-xs font-black cursor-pointer bg-black/50 ${q.points === 100 ? 'border-green-500/30 text-green-400' : q.points === 300 ? 'border-yellow-500/30 text-yellow-400' : 'border-red-500/30 text-red-400'}`}>
+                                  {[1,2,3,4,5,6].map(n => <option key={n} value={n}>{n}</option>)}
+                                </select>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${q.points === 100 ? 'bg-green-500/20 text-green-400' : q.points === 300 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
+                                  {q.points}
+                                </span>
+                              </div>
                             </td>
                             <td className="p-4 text-white/90">{q.text}</td>
                             <td className="p-4">
