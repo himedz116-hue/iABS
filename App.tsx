@@ -224,27 +224,6 @@ const App: React.FC = () => {
     const channel = 'iabs'; // Forced to iabs
     console.log(`[App] Initializing Chat Connection for: ${channel}`);
 
-    const envBotServers = process.env.REACT_APP_BOT_SERVER_URLS || process.env.REACT_APP_BOT_SERVER_URL || null;
-    const storedBotServers = localStorage.getItem('iabs_bot_server_urls');
-    let botServerUrls: string[] = [];
-
-    if (envBotServers) {
-      botServerUrls = envBotServers.split(',').map(u => u.trim()).filter(Boolean);
-    } else if (storedBotServers) {
-      try {
-        const parsed = JSON.parse(storedBotServers);
-        if (Array.isArray(parsed)) botServerUrls = parsed.filter(Boolean);
-      } catch (e) {
-        // legacy single URL
-        if (storedBotServers.trim()) botServerUrls = [storedBotServers.trim()];
-      }
-    }
-
-    if (botServerUrls.length > 0) {
-      console.log(`[App] Connecting to bot servers: ${JSON.stringify(botServerUrls)}`);
-      chatService.setBotServerUrl(botServerUrls);
-    }
-
     chatService.connect(channel);
 
     // Cleanup is not strictly necessary here as we want it persistent, 
@@ -726,7 +705,7 @@ const App: React.FC = () => {
 
                 return (
                   <>
-                    <div className="w-full flex justify-center max-w-2xl">
+                    <div className="w-full flex justify-center max-w-lg">
                       {primaryVisible.slice(0, 1).map((game) => (
                         <div key={game.id} className="w-full flex justify-center"
                           style={{

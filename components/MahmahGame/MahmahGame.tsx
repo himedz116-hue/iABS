@@ -3,7 +3,8 @@ import { chatService } from '../../services/chatService';
 import { supabase } from '../../services/supabase';
 import { FortuneWheelModal } from './FortuneWheelModal';
 import { ProAvatar } from '../ProAvatar';
-import { Home, Users, MessageCircle, Play, Trophy, Check, X, Shield, FastForward, Eye, Star, Crown, Zap, ArrowLeft, Sparkles, Volume2 } from 'lucide-react';
+import { Home, Users, MessageCircle, Play, Trophy, Check, X, Shield, FastForward, Eye, Star, Crown, Zap, ArrowLeft, Sparkles, Volume2, Award } from 'lucide-react';
+import { leaderboardService } from '../../services/supabase';
 import confetti from 'canvas-confetti';
 
 // ==========================================
@@ -589,6 +590,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
         }
       };
     });
+    leaderboardService.recordWin(winner.username, winner.avatar || '', currentQ.points);
     pendingChatWinnerRef.current = null;
     setTimeout(() => {
       closeQuestion();
@@ -611,7 +613,8 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
   const friendsCorrect = () => {
     if (!currentQ) return;
     const pts = currentQ.points * fMultiplier;
-    setAnsweringTeam(activeTeamIdx === 0 ? team1Name : team2Name);
+    const teamName = activeTeamIdx === 0 ? team1Name : team2Name;
+    setAnsweringTeam(teamName);
     setTeams(prev => prev.map((t, i) => i === activeTeamIdx ? { ...t, score: t.score + pts } : t));
     setShowAnswer(true);
     confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
@@ -1136,15 +1139,19 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
                          </div>
 
                          <div className="flex flex-col items-center gap-4 text-center">
-                           <div className="text-white font-black text-6xl md:text-7xl tracking-tight drop-shadow-[0_0_40px_rgba(250,204,21,0.4)]">
-                             {chatWinner.username}
-                           </div>
-                           <div className="text-yellow-100/80 font-bold text-xl md:text-2xl">
-                             🏆 احتفال الاستريمر بالفوز الرائع
-                           </div>
-                           <div className="text-white/40 font-bold text-xs uppercase tracking-widest">✅ الإجابة الصحيحة</div>
-                            <div className="text-white font-black text-3xl md:text-4xl text-green-400 tracking-tight">{currentQ.answer}</div>
-                         </div>
+                            <div className="text-white font-black text-6xl md:text-7xl tracking-tight drop-shadow-[0_0_40px_rgba(250,204,21,0.4)]">
+                              {chatWinner.username}
+                            </div>
+                            <div className="flex items-center gap-2 bg-yellow-500/20 border border-yellow-500/40 px-6 py-2 rounded-full">
+                              <Award size={20} className="text-yellow-300" />
+                              <span className="text-yellow-200 font-black text-2xl">+{currentQ.points} نقطة</span>
+                            </div>
+                            <div className="text-yellow-100/80 font-bold text-xl md:text-2xl">
+                              🏆 احتفال الاستريمر بالفوز الرائع
+                            </div>
+                            <div className="text-white/40 font-bold text-xs uppercase tracking-widest">✅ الإجابة الصحيحة</div>
+                             <div className="text-white font-black text-3xl md:text-4xl text-green-400 tracking-tight">{currentQ.answer}</div>
+                          </div>
                        </div>
                      </div>
                   ) : (
@@ -1152,7 +1159,13 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
                       <div className="text-green-400 font-black text-4xl mb-2">🎉 الفائز!</div>
                       <div className="flex items-center gap-6">
                         <ProAvatar url={chatWinner.avatar} username={chatWinner.username} size="w-28 h-28" className="overflow-visible shadow-[0_0_50px_rgba(34,197,94,0.8)]" />
-                        <div className="text-white font-black text-6xl">{chatWinner.username}</div>
+                        <div className="flex flex-col items-start gap-2">
+                          <div className="text-white font-black text-6xl">{chatWinner.username}</div>
+                          <div className="flex items-center gap-2 bg-green-500/20 border border-green-500/40 px-4 py-1.5 rounded-full">
+                            <Award size={18} className="text-green-400" />
+                            <span className="text-green-300 font-black text-xl">+{currentQ.points} نقطة</span>
+                          </div>
+                        </div>
                       </div>
                       <div className="text-white/40 font-bold text-xs uppercase tracking-widest mb-1">✅ الإجابة الصحيحة</div>
                       <div className="text-white font-black text-2xl md:text-3xl text-green-400 tracking-tight">{currentQ.answer}</div>
@@ -1258,6 +1271,10 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
                     <div className="flex items-center gap-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/40 px-8 py-4 rounded-2xl shadow-[0_0_30px_rgba(34,197,94,0.3)]">
                       <Trophy size={24} className="text-green-400" />
                       <span className="text-white font-black text-xl">أجاب: {answeringTeam}</span>
+                      <div className="flex items-center gap-2 bg-green-500/20 border border-green-500/30 px-3 py-1 rounded-full">
+                        <Award size={16} className="text-green-300" />
+                        <span className="text-green-200 font-black text-lg">+{currentQ.points * fMultiplier} نقطة</span>
+                      </div>
                     </div>
                   )}
                 </div>

@@ -467,7 +467,9 @@ const sendMessage = async (content) => {
 
 // API Routes
 
+// ============================================
 // Get bot status
+// ============================================
 app.get('/api/bot/status', (req, res) => {
   res.json({
     connected: botState.connected,

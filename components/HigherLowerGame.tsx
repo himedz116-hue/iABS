@@ -65,7 +65,14 @@ export const HigherLowerGame: React.FC<HigherLowerGameProps> = ({ onHome, isOBS 
             .order('id', { ascending: true });
             
         if (data && data.length > 0) {
-            setQuestions(data);
+            const seen = new Set<string>();
+            const uniqueQuestions = data.filter((q: Question) => {
+                const key = q.question_text.trim().toLowerCase();
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+            setQuestions(uniqueQuestions);
             setCurrentQuestionIndex(0);
             resetRound();
             setGameState('playing');
@@ -170,6 +177,8 @@ export const HigherLowerGame: React.FC<HigherLowerGameProps> = ({ onHome, isOBS 
                 {/* Compact Header */}
                 <div className="relative z-10 flex items-center justify-between px-6 py-3 bg-gradient-to-l from-purple-950/40 via-black/80 to-black/80 border-b border-white/10 shrink-0">
                     <div className="flex items-center gap-4">
+                        <IabsLogo size="sm" />
+                        <div className="h-6 w-px bg-white/10" />
                         <button onClick={onHome} className="p-2.5 bg-white/5 hover:bg-red-500/20 rounded-xl border border-white/10 hover:border-red-500/30 transition-all text-white active:scale-90">
                             <Home size={18} />
                         </button>
@@ -180,13 +189,12 @@ export const HigherLowerGame: React.FC<HigherLowerGameProps> = ({ onHome, isOBS 
                     </div>
                     <div className="flex items-center gap-3">
                         <span className="text-white/40 text-xs font-bold">30 مرحلة × 20 سؤال</span>
-                        <IabsLogo size="sm" />
                     </div>
                 </div>
 
                 {/* Main Grid Area */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 z-10 flex items-center justify-center">
-                    <div className="w-full max-w-4xl grid grid-cols-3 md:grid-cols-6 gap-3 mx-auto">
+                    <div className="w-full max-w-4xl grid grid-cols-3 md:grid-cols-6 gap-3 mx-auto mr-16">
                         {stages.map(stage => (
                             <button
                                 key={stage}
@@ -267,7 +275,7 @@ export const HigherLowerGame: React.FC<HigherLowerGameProps> = ({ onHome, isOBS 
                 </div>
             )}
 
-            <div className="w-full max-w-7xl px-4 flex flex-col items-center relative z-10">
+            <div className="w-full max-w-7xl px-4 flex flex-col items-center relative z-10 translate-x-8">
                 {/* Header Info */}
                 <div className="flex items-center gap-6 mb-8 text-white/70 font-black tracking-widest text-sm uppercase">
                     <div className="bg-white/5 px-4 py-2 rounded-xl border border-white/10 flex items-center gap-2">
@@ -305,45 +313,50 @@ export const HigherLowerGame: React.FC<HigherLowerGameProps> = ({ onHome, isOBS 
                         <span className="text-4xl font-black italic text-transparent bg-clip-text bg-gradient-to-br from-gray-400 to-white">VS</span>
                     </div>
 
-                    {/* Lower Bar (Red) */}
-                    <div className="w-5/12 h-full flex flex-col items-center justify-end relative">
-                        <div className="w-full rounded-t-3xl bg-gradient-to-t from-red-900/50 to-red-600/80 border-t-2 border-x-2 border-red-500/50 backdrop-blur-md transition-all duration-1000 ease-out shadow-[0_0_30px_rgba(220,38,38,0.3)] flex flex-col items-center justify-start overflow-hidden relative group"
-                             style={{ height: `${Math.max(10, lowerPercentage)}%` }}>
-                             
-                             {/* Floating avatars for Lower voters */}
-                             <div className="absolute inset-0 overflow-hidden opacity-50 flex flex-wrap gap-2 p-2 content-start">
-                                 {Array.from(lowerVotes).map(username => (
-                                     <ProAvatar key={username} url={voterData[username]?.avatar} username={username} size="w-8 h-8" />
-                                 ))}
-                             </div>
-
-                             <div className="absolute top-4 font-black text-4xl text-white drop-shadow-lg">{lowerPercentage}%</div>
-                        </div>
-                        <div className="mt-4 flex flex-col items-center">
-                            <ArrowDown size={48} className="text-red-500 animate-bounce drop-shadow-[0_0_15px_rgba(220,38,38,0.6)]" />
-                            <span className="text-3xl font-black text-red-500 italic drop-shadow-md tracking-tighter">أقل</span>
-                            <span className="text-white/50 font-bold">{lowerVotes.size} أصوات</span>
-                        </div>
-                    </div>
-
-                    {/* Higher Bar (Green) */}
+{/* Higher Bar (Green) - Right side */}
                     <div className="w-5/12 h-full flex flex-col items-center justify-end relative">
                         <div className="w-full rounded-t-3xl bg-gradient-to-t from-green-900/50 to-green-500/80 border-t-2 border-x-2 border-green-400/50 backdrop-blur-md transition-all duration-1000 ease-out shadow-[0_0_30px_rgba(74,222,128,0.3)] flex flex-col items-center justify-start overflow-hidden relative group"
                              style={{ height: `${Math.max(10, higherPercentage)}%` }}>
-                             
-                             {/* Floating avatars for Higher voters */}
-                             <div className="absolute inset-0 overflow-hidden opacity-50 flex flex-wrap gap-2 p-2 content-start">
-                                 {Array.from(higherVotes).map(username => (
-                                     <ProAvatar key={username} url={voterData[username]?.avatar} username={username} size="w-8 h-8" />
-                                 ))}
-                             </div>
+                          
+                            {/* Floating avatars for Higher voters */}
+                            <div className="absolute inset-0 overflow-hidden opacity-50 flex flex-wrap gap-2 p-2 content-start">
+                                {Array.from(higherVotes).map(username => (
+                                    <ProAvatar key={username} url={voterData[username]?.avatar} username={username} size="w-8 h-8" />
+                                ))}
+                            </div>
 
-                             <div className="absolute top-4 font-black text-4xl text-white drop-shadow-lg">{higherPercentage}%</div>
+                            <div className="absolute top-4 font-black text-4xl text-white drop-shadow-lg">{higherPercentage}%</div>
                         </div>
                         <div className="mt-4 flex flex-col items-center">
                             <ArrowUp size={48} className="text-green-400 animate-bounce drop-shadow-[0_0_15px_rgba(74,222,128,0.6)]" />
                             <span className="text-3xl font-black text-green-400 italic drop-shadow-md tracking-tighter">أعلى</span>
                             <span className="text-white/50 font-bold">{higherVotes.size} أصوات</span>
+                        </div>
+                    </div>
+
+                    {/* VS Badge */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-24 h-24 bg-black rounded-full border border-white/10 flex items-center justify-center drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+                        <span className="text-4xl font-black italic text-transparent bg-clip-text bg-gradient-to-br from-gray-400 to-white">VS</span>
+                    </div>
+
+                    {/* Lower Bar (Red) - Left side */}
+                    <div className="w-5/12 h-full flex flex-col items-center justify-end relative">
+                        <div className="w-full rounded-t-3xl bg-gradient-to-t from-red-900/50 to-red-600/80 border-t-2 border-x-2 border-red-500/50 backdrop-blur-md transition-all duration-1000 ease-out shadow-[0_0_30px_rgba(220,38,38,0.3)] flex flex-col items-center justify-start overflow-hidden relative group"
+                             style={{ height: `${Math.max(10, lowerPercentage)}%` }}>
+                          
+                            {/* Floating avatars for Lower voters */}
+                            <div className="absolute inset-0 overflow-hidden opacity-50 flex flex-wrap gap-2 p-2 content-start">
+                                {Array.from(lowerVotes).map(username => (
+                                    <ProAvatar key={username} url={voterData[username]?.avatar} username={username} size="w-8 h-8" />
+                                ))}
+                            </div>
+
+                            <div className="absolute top-4 font-black text-4xl text-white drop-shadow-lg">{lowerPercentage}%</div>
+                        </div>
+                        <div className="mt-4 flex flex-col items-center">
+                            <ArrowDown size={48} className="text-red-500 animate-bounce drop-shadow-[0_0_15px_rgba(220,38,38,0.6)]" />
+                            <span className="text-3xl font-black text-red-500 italic drop-shadow-md tracking-tighter">أقل</span>
+                            <span className="text-white/50 font-bold">{lowerVotes.size} أصوات</span>
                         </div>
                     </div>
                 </div>

@@ -26,9 +26,6 @@ class ChatService {
   private currentChatroomId: number | null = null;
   private currentChannelSlug: string | null = null;
 
-  // Bot Server URLs (multiple for redundancy - if one fails, next is tried)
-  private botServerUrls: string[] = [];
-
   // Kick Bot Tokens
   private KICK_BOT_ACCESS_TOKEN = "MTU4YJK4N2UTMDE1YI0ZYZY2LTHHYJYTNDQ2YJJMMWMZNJZH";
   private KICK_BOT_REFRESH_TOKEN = "MDY0MJQ4MZCTZJE3OS01OTQWLWFMZTATZMU5YJNHMGE4NZC1";
@@ -42,9 +39,12 @@ class ChatService {
   private isConnecting = false;
   private shouldAutoReconnect = true;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 10;
-  private reconnectBaseDelay = 1000;
+  private maxReconnectAttempts = 9999;
+  private reconnectBaseDelay = 1500;
   private reconnectTimer: any = null;
+  private healthCheckTimer: any = null;
+  private connectionTimeoutTimer: any = null;
+  private lastMessageTime: number = 0;
 
   async getChatroomId(channelSlug: string): Promise<number | null> {
     const slug = channelSlug.toLowerCase().trim();
@@ -60,58 +60,108 @@ class ChatService {
     }
 
     const proxies = [
-      `https://kick.com/api/v1/channels/${slug}`,
-      `https://api.allorigins.win/get?url=${encodeURIComponent(`https://kick.com/api/v2/channels/${slug}`)}`,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://kick.com/api/v2/channels/${slug}`)}`,
       `https://corsproxy.io/?${encodeURIComponent(`https://kick.com/api/v2/channels/${slug}`)}`,
       `https://proxy.cors.sh/https://kick.com/api/v2/channels/${slug}`,
-      `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(`https://kick.com/api/v2/channels/${slug}`)}`
+      `https://api.codetabs.com/v1/proxy/quest=${encodeURIComponent(`https://kick.com/api/v2/channels/${slug}`)}`,
+      `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(`https://kick.com/api/v2/channels/${slug}`)}`
     ];
 
-    for (const proxyUrl of proxies) {
-      try {
-        const response = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
-        if (!response.ok) continue;
+    const results = await Promise.allSettled(
+      proxies.map(url => this.fetchWithTimeout(url, 5000))
+    );
 
-        const rawData = await response.json();
-        const data = proxyUrl.includes('allorigins') ? JSON.parse(rawData.contents) : rawData;
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      if (result.status === 'fulfilled' && result.value.ok) {
+        try {
+          const rawData = await result.value.json();
+          const data = this.parseProxyResponse(proxies[i], rawData);
+          let foundId = null;
+          if (data?.chatroom?.id) foundId = data.chatroom.id;
+          else if (data?.id) foundId = data.id;
 
-        let foundId = null;
-        if (data?.chatroom?.id) foundId = data.chatroom.id;
-        else if (data?.id) foundId = data.id;
-
-        if (foundId) {
-          console.log(`[ChatService] ✅ Found ID: ${foundId} via ${proxyUrl.substring(0, 40)}`);
-          localStorage.setItem(`kick_chatroom_id_${slug}`, foundId.toString());
-          return foundId;
+          if (foundId) {
+            console.log(`[ChatService] ✅ Found ID: ${foundId} via ${proxies[i].substring(0, 50)}`);
+            localStorage.setItem(`kick_chatroom_id_${slug}`, foundId.toString());
+            return foundId;
+          }
+        } catch (e) {
+          console.warn(`[ChatService] Parse error for ${proxies[i]}`);
         }
-      } catch (e) {
-        console.warn(`[ChatService] Proxy failed: ${proxyUrl}`);
       }
     }
 
     return null;
   }
 
+  private async fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+      return response;
+    } catch (e) {
+      return new Response(null, { status: 0, statusText: 'timeout_or_error' });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  private parseProxyResponse(proxyUrl: string, rawData: any): any {
+    if (proxyUrl.includes('allorigins')) {
+      try { return JSON.parse(rawData.contents || '{}'); } catch (e) { return rawData; }
+    }
+    if (proxyUrl.includes('thingproxy')) {
+      return rawData;
+    }
+    return rawData;
+  }
+
   async connect(channelSlug: string = 'iabs'): Promise<void> {
     const slug = channelSlug.toLowerCase().trim();
     
+    // If stuck in connecting state for too long, force reset
     if (this.isConnecting) {
-      console.log('[ChatService] Connection already in progress, skipping...');
-      return;
+      console.log('[ChatService] Connection already in progress, force resetting...');
+      this.isConnecting = false;
     }
 
     if (this.isConnected && this.currentChannelSlug === slug && this.pusher) {
-      console.log('[ChatService] Already connected to', slug);
-      return;
+      const state = this.pusher.connection?.state;
+      if (state === 'connected') {
+        console.log('[ChatService] Already connected to', slug);
+        return;
+      }
+      // Pusher says not connected but we think we are - force reconnect
+      console.log('[ChatService] Pusher state mismatch:', state, '- force reconnecting...');
+      this.isConnected = false;
     }
 
     this.isConnecting = true;
     this.currentChannelSlug = slug;
     this.shouldAutoReconnect = true;
-    this.reconnectAttempts = 0;
     const myConnectionId = ++this.connectionId;
 
-    this.notifyStatus(false, false, `جاري البحث عن قناة ${slug}...`);
+    // Safety timeout: if connection doesn't complete in 15 seconds, reset isConnecting
+    if (this.connectionTimeoutTimer) clearTimeout(this.connectionTimeoutTimer);
+    this.connectionTimeoutTimer = setTimeout(() => {
+      if (this.isConnecting && myConnectionId === this.connectionId) {
+        console.warn('[ChatService] Connection timeout - resetting state');
+        this.isConnecting = false;
+        if (this.shouldAutoReconnect) {
+          this.scheduleReconnect(slug);
+        }
+      }
+    }, 15000);
+
+    this.notifyStatus(false, false, `جاري الاتصال بـ ${slug}...`);
 
     try {
       let chatroomId = await this.getChatroomId(slug);
@@ -130,12 +180,19 @@ class ChatService {
       this.pusher = new PusherClient('32cbd69e4b950bf97679', {
         cluster: 'us2',
         forceTLS: true,
-        enabledTransports: ['ws', 'wss']
+        enabledTransports: ['ws', 'wss'],
+        statsTimeout: 0,
+        pongTimeout: 30000,
+        wsTimeout: 30000,
+        maxRetries: 9999,
+        loopBackTimer: 2000,
+        disabledTransports: ['xhr_polling', 'xhr_streaming']
       });
 
       this.channel = this.pusher.subscribe(`chatrooms.${chatroomId}.v2`);
 
       this.channel.bind('App\\Events\\ChatMessageEvent', (data: any) => {
+        this.lastMessageTime = Date.now();
         const message: ChatMessage = {
           id: data.id || Math.random().toString(36).substr(2, 9),
           user: {
@@ -168,17 +225,25 @@ class ChatService {
       this.pusher.connection.bind('connected', () => {
         if (myConnectionId !== this.connectionId) return;
         console.log("[ChatService] WebSocket Connected!");
+        if (this.connectionTimeoutTimer) { clearTimeout(this.connectionTimeoutTimer); this.connectionTimeoutTimer = null; }
         this.isConnected = true;
         this.isConnecting = false;
         this.reconnectAttempts = 0;
         this.notifyStatus(true, false, `متصل (ID: ${chatroomId})`);
+        this.startHealthCheck(slug);
       });
 
       this.pusher.connection.bind('error', (err: any) => {
         if (myConnectionId !== this.connectionId) return;
         console.error("[ChatService] Pusher Error:", err);
+        if (this.connectionTimeoutTimer) { clearTimeout(this.connectionTimeoutTimer); this.connectionTimeoutTimer = null; }
         this.isConnected = false;
-        this.notifyStatus(false, true, "خطأ في الاتصال بسيرفر الشات");
+        this.isConnecting = false;
+        this.notifyStatus(false, false, "جاري إعادة الاتصال...");
+        
+        if (this.shouldAutoReconnect) {
+          this.scheduleReconnect(slug);
+        }
       });
 
       this.pusher.connection.bind('disconnected', () => {
@@ -186,7 +251,7 @@ class ChatService {
         console.log("[ChatService] Pusher Disconnected");
         this.isConnected = false;
         this.isConnecting = false;
-        this.notifyStatus(false, true, "انقطع الاتصال - جاري إعادة المحاولة...");
+        this.notifyStatus(false, true, "انقطع الاتصال - جاري إعادة الاتصال...");
         
         if (this.shouldAutoReconnect) {
           this.scheduleReconnect(slug);
@@ -194,16 +259,25 @@ class ChatService {
       });
 
       this.pusher.connection.bind('state_change', (states: any) => {
-        if (states.current === 'connecting' && myConnectionId !== this.connectionId) return;
+        if (myConnectionId !== this.connectionId) return;
         console.log("[ChatService] Connection State:", states.current);
+        
+        if (states.current === 'disconnected' || states.current === 'failed') {
+          this.isConnected = false;
+          this.notifyStatus(false, false, "جاري إعادة الاتصال...");
+          if (this.shouldAutoReconnect) {
+            this.scheduleReconnect(slug);
+          }
+        }
       });
 
     } catch (error: any) {
       if (myConnectionId !== this.connectionId) return;
-      console.error("[ChatService] Fatal Error:", error);
+      console.error("[ChatService] Connection Error:", error);
+      if (this.connectionTimeoutTimer) { clearTimeout(this.connectionTimeoutTimer); this.connectionTimeoutTimer = null; }
       this.isConnected = false;
       this.isConnecting = false;
-      this.notifyStatus(false, true, error.message);
+      this.notifyStatus(false, false, "جاري إعادة الاتصال...");
       
       if (this.shouldAutoReconnect) {
         this.scheduleReconnect(slug);
@@ -216,17 +290,11 @@ class ChatService {
       clearTimeout(this.reconnectTimer);
     }
 
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('[ChatService] Max reconnect attempts reached');
-      this.notifyStatus(false, true, 'فشل الاتصال بعد عدة محاولات');
-      return;
-    }
-
     this.reconnectAttempts++;
-    const delay = Math.min(this.reconnectBaseDelay * Math.pow(2, this.reconnectAttempts - 1), 30000);
+    const delay = Math.min(this.reconnectBaseDelay * Math.pow(1.5, Math.min(this.reconnectAttempts - 1, 6)), 15000);
     
     console.log(`[ChatService] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
-    this.notifyStatus(false, false, `إعادة المحاولة خلال ${Math.ceil(delay / 1000)} ثواني...`);
+    this.notifyStatus(false, false, `إعادة الاتصال... (${Math.ceil(delay / 1000)}ث)`);
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
@@ -234,7 +302,32 @@ class ChatService {
     }, delay);
   }
 
+  private startHealthCheck(slug: string) {
+    this.stopHealthCheck();
+    this.lastMessageTime = Date.now();
+    this.healthCheckTimer = setInterval(() => {
+      if (!this.pusher || !this.isConnected) return;
+      
+      const state = this.pusher.connection?.state;
+      if (state !== 'connected') {
+        console.warn(`[ChatService] Health check: state is ${state}, reconnecting...`);
+        this.isConnected = false;
+        this.notifyStatus(false, false, "جاري إعادة الاتصال...");
+        this.cleanupPusher();
+        this.connect(slug);
+      }
+    }, 10000);
+  }
+
+  private stopHealthCheck() {
+    if (this.healthCheckTimer) {
+      clearInterval(this.healthCheckTimer);
+      this.healthCheckTimer = null;
+    }
+  }
+
   private cleanupPusher() {
+    this.stopHealthCheck();
     if (this.channel) {
       try { this.channel.unbind_all(); } catch (e) {}
       try { this.channel.unsubscribe(); } catch (e) {}
@@ -283,25 +376,7 @@ class ChatService {
       return false;
     }
 
-    for (const serverUrl of this.botServerUrls) {
-      try {
-        const response = await fetch(`${serverUrl}/api/bot/send`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content })
-        });
-
-        if (response.ok) {
-          console.log('[ChatService] Message sent via bot server:', serverUrl);
-          return true;
-        } else {
-          console.warn(`[ChatService] Bot server ${serverUrl} returned ${response.status}`);
-        }
-      } catch (e) {
-        console.warn(`[ChatService] Bot server ${serverUrl} failed:`, e);
-      }
-    }
-
+    // Try Vite dev proxy first (local development)
     try {
       const response = await fetch(`/kick-api/public/v1/chatrooms/${this.currentChatroomId}/messages`, {
         method: "POST",
@@ -313,44 +388,42 @@ class ChatService {
         body: JSON.stringify({ content, type: "message" })
       });
 
-      if (!response.ok) {
-        console.error('[ChatService] Failed to send message. Status:', response.status);
-        const text = await response.text();
-        console.error('[ChatService] Response:', text);
-        return false;
+      if (response.ok) {
+        return true;
       }
-      return true;
     } catch (e) {
-      console.error('[ChatService] Exception while sending message:', e);
-      return false;
+      // dev proxy not available
     }
-  }
 
-  setBotServerUrl(url: string | string[] | null) {
-    if (Array.isArray(url)) {
-      this.botServerUrls = url.filter(Boolean);
-    } else if (typeof url === 'string' && url) {
-      this.botServerUrls = [url];
-    } else {
-      this.botServerUrls = [];
+    const proxyFallbacks = [
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://api.kick.com/public/v1/chatrooms/${this.currentChatroomId}/messages`)}`,
+      `https://corsproxy.io/?${encodeURIComponent(`https://api.kick.com/public/v1/chatrooms/${this.currentChatroomId}/messages`)}`,
+      `https://proxy.cors.sh/https://api.kick.com/public/v1/chatrooms/${this.currentChatroomId}/messages`
+    ];
+
+    for (const proxyUrl of proxyFallbacks) {
+      try {
+        const response = await fetch(proxyUrl, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${this.KICK_BOT_ACCESS_TOKEN}`,
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({ content, type: "message" })
+        });
+
+        if (response.ok) {
+          console.log('[ChatService] Message sent via fallback proxy');
+          return true;
+        }
+      } catch (e) {
+        console.warn(`[ChatService] Fallback proxy ${proxyUrl} failed:`, e);
+      }
     }
-    console.log(`[ChatService] Bot server URLs set to: ${JSON.stringify(this.botServerUrls) || 'none (using direct API)'}`);
-  }
 
-  getBotServerUrls() {
-    return [...this.botServerUrls];
-  }
-
-  addBotServerUrl(url: string) {
-    if (url && !this.botServerUrls.includes(url)) {
-      this.botServerUrls.push(url);
-      console.log(`[ChatService] Added bot server URL: ${url}`);
-    }
-  }
-
-  removeBotServerUrl(url: string) {
-    this.botServerUrls = this.botServerUrls.filter(u => u !== url);
-    console.log(`[ChatService] Removed bot server URL: ${url}`);
+    console.error('[ChatService] Failed to send message via all methods');
+    return false;
   }
 
   async fetchKickAvatar(username: string): Promise<string> {
@@ -361,52 +434,45 @@ class ChatService {
     const fetchPromise = (async () => {
       try {
         const proxies = [
-          `https://api.allorigins.win/get?url=${encodeURIComponent(`https://kick.com/api/v1/channels/${slug}`)}&disableCache=true`,
+          `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://kick.com/api/v1/channels/${slug}`)}&disableCache=true`,
           `https://corsproxy.io/?${encodeURIComponent(`https://kick.com/api/v1/channels/${slug}`)}`,
           `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(`https://kick.com/api/v1/channels/${slug}`)}`,
           `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(`https://kick.com/api/v2/channels/${slug}`)}`,
           `https://proxy.cors.sh/https://kick.com/api/v2/channels/${slug}`
         ];
 
-        for (const proxyUrl of proxies) {
-          try {
-            const response = await fetch(proxyUrl, {
-              cache: 'no-store',
-              headers: { 'Accept': 'application/json, text/plain' }
-            });
-            if (!response.ok) continue;
+        const results = await Promise.allSettled(
+          proxies.map(url => this.fetchWithTimeout(url, 5000))
+        );
 
-            let avatar = '';
-            const rawData = await response.json();
-            let data: any;
+        for (let i = 0; i < results.length; i++) {
+          const result = results[i];
+          if (result.status === 'fulfilled' && result.value.ok) {
+            try {
+              const rawData = await result.value.json();
+              const data = this.parseProxyResponse(proxies[i], rawData);
 
-            if (proxyUrl.includes('allorigins')) {
-              if (!rawData.contents) continue;
-              data = JSON.parse(rawData.contents);
-            } else {
-              data = rawData;
+              const avatar = data.user?.profile_pic ||
+                data.user?.profilepic ||
+                data.profile_pic ||
+                data.user?.avatar?.url ||
+                data.user?.avatar ||
+                data.avatar_url ||
+                (data.chatroom?.sender?.profile_pic) ||
+                (data.livestream?.thumbnail?.url) || '';
+
+              if (avatar && avatar.length > 10) {
+                let finalAvatar = avatar;
+                if (finalAvatar.startsWith('//')) finalAvatar = 'https:' + finalAvatar;
+                if (finalAvatar.startsWith('/')) finalAvatar = 'https://kick.com' + finalAvatar;
+                finalAvatar = finalAvatar.replace('https://kick.com/', 'https://files.kick.com/');
+
+                this.avatarCache[slug] = finalAvatar;
+                return finalAvatar;
+              }
+            } catch (e) {
+              // continue
             }
-
-            avatar = data.user?.profile_pic ||
-              data.user?.profilepic ||
-              data.profile_pic ||
-              data.user?.avatar?.url ||
-              data.user?.avatar ||
-              data.avatar_url ||
-              (data.chatroom?.sender?.profile_pic) ||
-              (data.livestream?.thumbnail?.url) || '';
-
-            if (avatar && avatar.length > 10) {
-              let finalAvatar = avatar;
-              if (finalAvatar.startsWith('//')) finalAvatar = 'https:' + finalAvatar;
-              if (finalAvatar.startsWith('/')) finalAvatar = 'https://kick.com' + finalAvatar;
-              finalAvatar = finalAvatar.replace('https://kick.com/', 'https://files.kick.com/');
-
-              this.avatarCache[slug] = finalAvatar;
-              return finalAvatar;
-            }
-          } catch (e) {
-            // continue
           }
         }
       } catch (e) {
@@ -425,15 +491,22 @@ class ChatService {
     if (this.currentChannelSlug) {
       this.shouldAutoReconnect = true;
       this.reconnectAttempts = 0;
+      this.isConnecting = false;
+      this.cleanupPusher();
       this.connect(this.currentChannelSlug);
     }
   }
 
   disconnect() {
     this.shouldAutoReconnect = false;
+    this.stopHealthCheck();
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
+    }
+    if (this.connectionTimeoutTimer) {
+      clearTimeout(this.connectionTimeoutTimer);
+      this.connectionTimeoutTimer = null;
     }
     this.cleanupPusher();
     this.isConnected = false;

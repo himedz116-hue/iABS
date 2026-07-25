@@ -278,17 +278,6 @@ export const MapGuesser: React.FC<MapGuesserProps> = ({ onHome, isOBS }) => {
       {phase === 'PLAYING' && targetCountry && (
         <div className="w-full h-full flex flex-col p-8 z-10">
           
-          <div className="flex justify-between items-center mb-6">
-            <div className="bg-blue-950/40 border border-blue-500/30 px-8 py-4 rounded-3xl flex items-center gap-4 backdrop-blur-md">
-              <MapPin className="w-8 h-8 text-blue-500 animate-bounce" />
-              <h2 className="text-3xl font-black text-white tracking-wider">ما هي هذه الدولة؟</h2>
-            </div>
-            
-            <div className="bg-indigo-950/40 border border-indigo-500/30 px-8 py-4 rounded-3xl flex items-center gap-4 backdrop-blur-md text-2xl font-black text-indigo-300">
-              جولة {currentRound} / {roundsToPlay}
-            </div>
-          </div>
-
           <div className="flex-1 flex gap-8">
             {/* Map Container */}
             <div className="flex-[3] bg-black/40 border border-blue-900/50 rounded-[3rem] overflow-hidden relative shadow-[0_0_50px_rgba(0,0,0,0.5)] backdrop-blur-xl">
@@ -447,8 +436,10 @@ export const MapGuesser: React.FC<MapGuesserProps> = ({ onHome, isOBS }) => {
               </AnimatePresence>
             </div>
 
-            {/* Side Panel for Hints (For Host) */}
-            <div className="flex-1 bg-black/40 border border-blue-900/50 rounded-[3rem] p-8 flex flex-col gap-6 relative shadow-[0_0_50px_rgba(0,0,0,0.5)] backdrop-blur-xl">
+            {/* Right Side Column */}
+            <div className="flex-1 flex flex-col gap-4 shrink-0">
+              {/* Side Panel for Hints */}
+              <div className="bg-black/40 border border-blue-900/50 rounded-[3rem] p-8 flex flex-col gap-6 relative shadow-[0_0_50px_rgba(0,0,0,0.5)] backdrop-blur-xl mt-64">
               <h3 className="text-2xl font-black text-blue-400 border-b border-blue-900/50 pb-4 flex items-center gap-3">
                 <Search className="w-6 h-6" /> {winner ? 'نهاية الجولة' : 'لوحة التلميحات'}
               </h3>
@@ -585,28 +576,29 @@ export const MapGuesser: React.FC<MapGuesserProps> = ({ onHome, isOBS }) => {
                   </div>
                 )}
 
-                {/* Winner Next Round Button (Host only) */}
-                {winner && !isOBS && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex-1 flex flex-col items-center justify-center gap-6"
-                  >
-                    <p className="text-center text-blue-300 font-bold">
-                      {winner.id === 'system_skip' ? 'تم تخطي الجولة.' : `الفائز: ${winner.user.username}`}
-                    </p>
-                    <motion.button 
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={nextRound} 
-                      className="bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-500 hover:to-indigo-400 text-white font-black py-4 px-12 rounded-full text-xl transition-all shadow-[0_0_30px_rgba(59,130,246,0.6)] cursor-pointer w-full"
-                    >
-                      {currentRound < roundsToPlay ? 'الجولة التالية' : 'إنهاء اللعبة'}
-                    </motion.button>
-                  </motion.div>
-                )}
               </div>
             </div>
+
+            {/* Round + Next Button below hints panel */}
+            <div className="flex flex-col gap-3 shrink-0">
+              <div className="bg-indigo-950/40 border border-indigo-500/30 px-6 py-3 rounded-2xl flex items-center justify-center gap-3 backdrop-blur-md text-xl font-black text-indigo-300 mt-10">
+                <MapPin className="w-6 h-6 text-blue-500 animate-bounce" />
+                جولة {currentRound} / {roundsToPlay}
+              </div>
+              {winner && !isOBS && (
+                <motion.button 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={nextRound} 
+                  className="bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-500 hover:to-indigo-400 text-white font-black py-4 px-10 rounded-2xl text-lg transition-all shadow-[0_0_30px_rgba(59,130,246,0.6)] cursor-pointer"
+                >
+                  {currentRound < roundsToPlay ? 'الجولة التالية' : 'إنهاء اللعبة'}
+                </motion.button>
+              )}
+            </div>
+          </div>
           </div>
         </div>
       )}
