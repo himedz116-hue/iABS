@@ -311,11 +311,11 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
       const maxActive = selectedCategories.reduce((max, catId) => {
         const cat = dbCategories.find(c => c.id === catId);
         if (!cat) return max;
-        const dbActive = (cat as any).active_stage;
         const lsRaw = localStorage.getItem(`mahmah_active_stage_${catId}`);
         const lsActive = parseInt(lsRaw || '0');
-        const active = dbActive ? dbActive - 1 : (lsActive ? lsActive - 1 : 0);
-        console.log(`[Mahmah] Stage resolve: catId=${catId}, dbActive=${dbActive}, lsRaw="${lsRaw}", lsActive=${lsActive}, active=${active}`);
+        const dbActive = (cat as any).active_stage;
+        const active = lsActive ? lsActive - 1 : (dbActive ? dbActive - 1 : 0);
+        console.log(`[Mahmah] Stage resolve: catId=${catId}, lsRaw="${lsRaw}", dbActive=${dbActive}, resolved=${active}`);
         return Math.max(max, active);
       }, 0);
       return maxActive;
@@ -949,6 +949,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
           <div className="flex items-center gap-3">
             <button onClick={onBack} className="text-white/30 hover:text-white/70 transition-colors"><Home size={20} /></button>
             <h1 className="text-3xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-yellow-500">محمح</h1>
+            <span className="bg-amber-500/20 text-amber-300 text-xs font-black px-3 py-1 rounded-full border border-amber-500/30">المرحلة {currentStageIdx + 1}</span>
           </div>
           <div className="bg-white/10 px-4 py-1.5 rounded-full text-white/70 font-bold text-sm flex items-center gap-2">
             {mode === 'chat' ? <><MessageCircle size={14} /> طور الشات</> : <><Users size={14} /> طور الأصدقاء</>}
@@ -957,39 +958,10 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
 
 
 
-        {/* Stage Navigation */}
-        {(() => {
-          const maxStages = selectedCategories.reduce((max, catId) => {
-            const cat = dbCategories.find(c => c.id === catId);
-            if (!cat) return max;
-            const numStages = cat.num_stages || getStageCount((cat.questions || []).length) || 1;
-            const actual = getActualStageCount(cat.questions || [], numStages);
-            return Math.max(max, actual);
-          }, 1);
-          if (maxStages <= 1) return null;
-          return (
-            <div className="flex items-center justify-center gap-2 mb-3 px-4">
-              {Array.from({ length: maxStages }, (_, i) => (
-                <button key={i} onClick={() => switchStage(i)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-black text-sm transition-all ${
-                    currentStageIdx === i
-                      ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black shadow-lg shadow-amber-500/20 scale-105'
-                      : 'bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 hover:text-white/70'
-                  }`}>
-                  <span className="w-6 h-6 rounded-lg flex items-center justify-center text-xs bg-white/10">{i + 1}</span>
-                  المرحلة {i + 1}
-                  {i < currentStageIdx && <Check size={14} className="text-green-400" />}
-                </button>
-              ))}
-            </div>
-          );
-        })()}
-
         {/* Jeopardy Grid */}
         <div className="flex-1 grid gap-2" style={{ gridTemplateColumns: `repeat(${activeCategories.length}, 1fr)` }}>
           {activeCategories.map((cat) => {
-            const stageNum = parseInt((cat.levelLabel || 'مرحلة 1').replace('مرحلة ', '')) || 1;
-            const isMultiStage = activeCategories.some(c => c.parentCategoryId === cat.parentCategoryId && c.id !== cat.id);
+            const stageNum = currentStageIdx + 1;
             return (
             <div key={cat.id} className="flex flex-col gap-1.5 h-full">
               {/* Category Header */}
@@ -997,7 +969,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
                 <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${cat.gradient || 'from-amber-400 to-yellow-500'}`} />
                 <div className="absolute -top-0.5 -right-0.5">
                   <div className="bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-[10px] font-black px-2.5 py-0.5 rounded-bl-xl rounded-tr-xl">
-                    {stageNum}
+                    المرحلة {stageNum}
                   </div>
                 </div>
                 <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center mb-1 shadow-inner overflow-hidden">
