@@ -36,7 +36,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [selectedMahmahCategory, setSelectedMahmahCategory] = useState<any>(null);
   const [isAddingMahmahCategory, setIsAddingMahmahCategory] = useState(false);
   const [isAddingMahmahQuestion, setIsAddingMahmahQuestion] = useState(false);
-  const [newMahmahCategory, setNewMahmahCategory] = useState({ name: '', image_url: '' });
+  const [newMahmahCategory, setNewMahmahCategory] = useState({ name: '', image_url: '', num_stages: 1 });
   const [newMahmahQuestion, setNewMahmahQuestion] = useState({ points: 100, order_number: 1, text: '', answer: '', media_url: '', media_type: '' as string, answer_media_url: '', answer_media_type: '' as string });
   const [uploadingQuestionMedia, setUploadingQuestionMedia] = useState(false);
   const [uploadingAnswerImage, setUploadingAnswerImage] = useState(false);
@@ -266,9 +266,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     e.preventDefault();
     if (!newMahmahCategory.name || !newMahmahCategory.image_url) return showStatus('يرجى إدخال اسم الفئة وصورتها', true);
     setIsLoading(true);
-    const { error } = await supabase.from('mahmah_categories').insert([{ name: newMahmahCategory.name, image_url: newMahmahCategory.image_url }]);
+    const { error } = await supabase.from('mahmah_categories').insert([{ name: newMahmahCategory.name, image_url: newMahmahCategory.image_url, num_stages: newMahmahCategory.num_stages }]);
     if (error) showStatus('خطأ في الإضافة: ' + error.message, true);
-    else { showStatus('تمت الإضافة بنجاح'); setIsAddingMahmahCategory(false); setNewMahmahCategory({ name: '', image_url: '' }); fetchData(); }
+    else { showStatus('تمت الإضافة بنجاح'); setIsAddingMahmahCategory(false); setNewMahmahCategory({ name: '', image_url: '', num_stages: 1 }); fetchData(); }
     setIsLoading(false);
   };
 
@@ -291,6 +291,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     const { error } = await supabase.from('mahmah_categories').delete().eq('id', id);
     if (error) showStatus('خطأ في الحذف: ' + error.message, true);
     else { showStatus('تم الحذف بنجاح'); if(selectedMahmahCategory?.id === id) setSelectedMahmahCategory(null); fetchData(); }
+    setIsLoading(false);
+  };
+
+  const handleUpdateNumStages = async (catId: string, numStages: number) => {
+    setIsLoading(true);
+    const { error } = await supabase.from('mahmah_categories').update({ num_stages: numStages }).eq('id', catId);
+    if (error) showStatus('خطأ في التعديل: ' + error.message, true);
+    else { showStatus('تم تحديث المراحل'); fetchData(); }
     setIsLoading(false);
   };
 
@@ -1018,6 +1026,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                       {newMahmahCategory.image_url && <img src={newMahmahCategory.image_url} alt="Preview" className="h-16 w-16 object-cover rounded-xl mt-2 border border-white/10" />}
                     </div>
                   </div>
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">عدد المراحل</label>
+                    <input type="number" min={1} max={20} value={newMahmahCategory.num_stages} onChange={e => setNewMahmahCategory({ ...newMahmahCategory, num_stages: Math.max(1, parseInt(e.target.value) || 1) })}
+                      className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold placeholder-white/20 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                      placeholder="1" />
+                  </div>
                   <div className="flex gap-3 justify-end mt-6">
                     <button type="button" onClick={() => setIsAddingMahmahCategory(false)} className="px-6 py-3 bg-white/5 border border-white/10 text-white rounded-xl font-black text-sm hover:bg-white/10 transition-all">إلغاء</button>
                     <button type="submit" disabled={uploadingImage} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black text-sm hover:bg-indigo-500 transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)]">حفظ الفئة</button>
@@ -1041,7 +1055,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                           <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end">
                             <div>
                               <h3 className="text-white font-black text-lg truncate">{cat.name}</h3>
-                              <p className="text-indigo-400 font-bold text-xs">{count} أسئلة</p>
+                              <p className="text-indigo-400 font-bold text-xs">{count} أسئلة · {cat.num_stages || 1} مراحل</p>
                             </div>
                           </div>
                         </div>
@@ -1063,6 +1077,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                     <div>
                       <h2 className="text-3xl font-black text-white">{selectedMahmahCategory.name}</h2>
                       <p className="text-indigo-400 font-bold">إدارة أسئلة هذه الفئة</p>
+                    </div>
+                    <div className="mr-auto flex items-center gap-3">
+                      <label className="text-xs font-bold text-zinc-400">المراحل:</label>
+                      <select value={selectedMahmahCategory.num_stages || 1} onChange={e => {
+                        const val = parseInt(e.target.value);
+                        setSelectedMahmahCategory({ ...selectedMahmahCategory, num_stages: val });
+                        handleUpdateNumStages(selectedMahmahCategory.id, val);
+                      }} className="bg-black/50 border border-indigo-500/30 text-indigo-400 rounded-xl px-4 py-2 font-black text-sm cursor-pointer focus:outline-none focus:border-indigo-500">
+                        {Array.from({ length: 20 }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n}</option>)}
+                      </select>
                     </div>
                   </div>
 
