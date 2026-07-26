@@ -929,7 +929,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
 
       <div className="flex items-center gap-2 text-yellow-500 font-black text-lg mb-6"><Star size={20} /> {selectedCategories.length} / 6</div>
 
-      <button onClick={() => startGame(0)} disabled={selectedCategories.length === 0}
+      <button onClick={() => startGame()} disabled={selectedCategories.length === 0}
         className="bg-gradient-to-r from-red-600 to-red-800 text-white font-black text-xl italic px-12 py-4 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_40px_rgba(255,0,0,0.3)] flex items-center gap-3">
         <Play size={24} /> ادامه
       </button>
@@ -956,6 +956,34 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
         </div>
 
 
+
+        {/* Stage Navigation */}
+        {(() => {
+          const maxStages = selectedCategories.reduce((max, catId) => {
+            const cat = dbCategories.find(c => c.id === catId);
+            if (!cat) return max;
+            const numStages = cat.num_stages || getStageCount((cat.questions || []).length) || 1;
+            const actual = getActualStageCount(cat.questions || [], numStages);
+            return Math.max(max, actual);
+          }, 1);
+          if (maxStages <= 1) return null;
+          return (
+            <div className="flex items-center justify-center gap-2 mb-3 px-4">
+              {Array.from({ length: maxStages }, (_, i) => (
+                <button key={i} onClick={() => switchStage(i)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-black text-sm transition-all ${
+                    currentStageIdx === i
+                      ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black shadow-lg shadow-amber-500/20 scale-105'
+                      : 'bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 hover:text-white/70'
+                  }`}>
+                  <span className="w-6 h-6 rounded-lg flex items-center justify-center text-xs bg-white/10">{i + 1}</span>
+                  المرحلة {i + 1}
+                  {i < currentStageIdx && <Check size={14} className="text-green-400" />}
+                </button>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Jeopardy Grid */}
         <div className="flex-1 grid gap-2" style={{ gridTemplateColumns: `repeat(${activeCategories.length}, 1fr)` }}>
