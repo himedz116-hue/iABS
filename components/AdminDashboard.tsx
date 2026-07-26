@@ -120,7 +120,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     });
     return () => {
       unbindStatus();
-      chatService.disconnect();
       setChatMonitorActive(false);
     };
   }, []);
