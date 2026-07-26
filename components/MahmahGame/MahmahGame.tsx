@@ -21,10 +21,18 @@ const getStageCount = (questionCount: number): number => Math.floor(questionCoun
 const getStagePointLabel = (idx: number): string => idx < 2 ? '100' : idx < 4 ? '300' : '600';
 
 const buildStageQuestions = (questions: MahmahQuestion[], stageIdx: number): MahmahQuestion[] => {
-  const sorted = [...questions].sort((a, b) => (a.order_number || 1) - (b.order_number || 1));
+  const hasOrder = questions.some(q => q.order_number && q.order_number > 1);
+  const sorted = hasOrder
+    ? [...questions].sort((a, b) => a.order_number - b.order_number)
+    : [...questions].sort((a, b) => a.points - b.points);
   const start = stageIdx * QUESTIONS_PER_STAGE;
   const slice = sorted.slice(start, start + QUESTIONS_PER_STAGE);
   return slice.map((q, i) => ({ ...q, points: STAGE_POINTS[i] || 600 }));
+};
+
+const getActualStageCount = (questions: MahmahQuestion[], numStages: number): number => {
+  const maxFromQuestions = Math.floor(questions.length / QUESTIONS_PER_STAGE);
+  return Math.min(numStages || 1, Math.max(1, maxFromQuestions));
 };
 type ChatSide = 'chat' | 'streamer';
 
@@ -298,6 +306,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
   // START GAME
   // ==========================================
   const startGame = (stageIdx: number = 0) => {
+    console.log(`[Mahmah] Starting game at stage ${stageIdx}, selectedCategories:`, selectedCategories, 'dbCategories:', dbCategories.map(c => ({ name: c.name, num_stages: c.num_stages, qCount: c.questions?.length })));
     const cats: MahmahCategory[] = [];
     selectedCategories.forEach(catId => {
       const cat = dbCategories.find(c => c.id === catId);
@@ -336,12 +345,14 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
   };
 
   const switchStage = (stageIdx: number) => {
+    console.log(`[Mahmah] Switching to stage ${stageIdx}, currentStageIdx=${currentStageIdx}`);
     if (stageIdx === currentStageIdx) return;
     const cats: MahmahCategory[] = [];
     selectedCategories.forEach(catId => {
       const cat = dbCategories.find(c => c.id === catId);
       if (!cat) return;
       const stageQs = buildStageQuestions(cat.questions || [], stageIdx);
+      console.log(`[Mahmah] Category ${cat.name}: ${cat.questions.length} total questions, stage ${stageIdx} → ${stageQs.length} questions`);
       cats.push({ ...cat, questions: stageQs });
     });
     setActiveCategories(cats);
@@ -911,7 +922,9 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
         {(() => {
           const maxStages = selectedCategories.reduce((max, catId) => {
             const cat = dbCategories.find(c => c.id === catId);
-            return Math.max(max, cat?.num_stages || 1);
+            if (!cat) return max;
+            const actual = getActualStageCount(cat.questions || [], cat.num_stages || 1);
+            return Math.max(max, actual);
           }, 1);
           if (maxStages <= 1) return null;
           return (
