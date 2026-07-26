@@ -610,13 +610,36 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
   // QUESTION ACTIONS
   // ==========================================
   const closeQuestion = () => {
+    const newAnswered = new Set(answeredQs);
     if (currentQ) {
-      setAnsweredQs(prev => new Set(prev).add(currentQ.id));
+      newAnswered.add(currentQ.id);
+      setAnsweredQs(newAnswered);
     }
     setCurrentQ(null);
     setShowAnswer(false);
     setStreamerRevealed(false);
     setStreamerCorrectFlash(false);
+
+    const totalQs = activeCategories.reduce((sum, c) => sum + (c.questions?.length || 0), 0);
+    const allDone = newAnswered.size >= totalQs && totalQs > 0;
+
+    if (allDone) {
+      const maxStages = selectedCategories.reduce((max, catId) => {
+        const cat = dbCategories.find(c => c.id === catId);
+        if (!cat) return max;
+        const qCount = (cat.questions || []).length;
+        const numStages = cat.num_stages || getStageCount(qCount) || 1;
+        const actual = getActualStageCount(cat.questions || [], numStages);
+        return Math.max(max, actual);
+      }, 1);
+      const nextIdx = currentStageIdx + 1;
+      if (nextIdx < maxStages) {
+        setTimeout(() => switchStage(nextIdx), 800);
+        setStage('playing');
+        return;
+      }
+    }
+
     setStage('playing');
     
     if (mode === 'friends') {
