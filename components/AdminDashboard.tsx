@@ -34,6 +34,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [mahmahCategories, setMahmahCategories] = useState<any[]>([]);
   const [mahmahQuestions, setMahmahQuestions] = useState<any[]>([]);
   const [selectedMahmahCategory, setSelectedMahmahCategory] = useState<any>(null);
+  const [selectedMahmahStage, setSelectedMahmahStage] = useState<number>(0);
   const [isAddingMahmahCategory, setIsAddingMahmahCategory] = useState(false);
   const [isAddingMahmahQuestion, setIsAddingMahmahQuestion] = useState(false);
   const [newMahmahCategory, setNewMahmahCategory] = useState({ name: '', image_url: '', num_stages: 1 });
@@ -281,7 +282,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     if (newMahmahQuestion.answer_media_url) { insertData.answer_media_url = newMahmahQuestion.answer_media_url; insertData.answer_media_type = newMahmahQuestion.answer_media_type || 'image'; }
     const { error } = await supabase.from('mahmah_questions').insert([insertData]);
     if (error) showStatus('خطأ في الإضافة: ' + error.message, true);
-    else { showStatus('تمت الإضافة بنجاح'); setIsAddingMahmahQuestion(false); setNewMahmahQuestion({ points: 100, order_number: 1, text: '', answer: '', media_url: '', media_type: '', answer_media_url: '', answer_media_type: '' }); fetchData(); }
+    else { showStatus('تمت الإضافة بنجاح'); setIsAddingMahmahQuestion(false); const nextLocal = (mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id).filter(q => { const stageStart = selectedMahmahStage * 6; const ord = q.order_number || 1; return ord >= stageStart + 1 && ord <= stageStart + 6; }).length + 1); setNewMahmahQuestion({ points: 100, order_number: nextLocal <= 6 ? selectedMahmahStage * 6 + nextLocal : selectedMahmahStage * 6 + 1, text: '', answer: '', media_url: '', media_type: '', answer_media_url: '', answer_media_type: '' }); fetchData(); }
     setIsLoading(false);
   };
 
@@ -316,6 +317,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     const { error } = await supabase.from('mahmah_questions').update({ order_number: newOrder }).eq('id', id);
     if (error) showStatus('خطأ في التعديل: ' + error.message, true);
     else { showStatus('تم التعديل بنجاح'); fetchData(); }
+    setIsLoading(false);
+  };
+
+  const handleAutoAssignOrder = async () => {
+    if (!selectedMahmahCategory) return;
+    setIsLoading(true);
+    const catQs = mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id).sort((a,b) => (a.points || 0) - (b.points || 0) || new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
+    const updates = catQs.map((q, i) => supabase.from('mahmah_questions').update({ order_number: i + 1 }).eq('id', q.id));
+    const results = await Promise.all(updates);
+    const hasError = results.some(r => r.error);
+    if (hasError) showStatus('خطأ في التحديث', true);
+    else { showStatus('تم ترتيب الأسئلة تلقائياً'); fetchData(); }
     setIsLoading(false);
   };
 
@@ -986,7 +999,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                     </button>
                   )}
                   {selectedMahmahCategory && (
-                    <button onClick={() => setIsAddingMahmahQuestion(true)} className="px-6 py-3 bg-indigo-600/10 text-indigo-500 border border-indigo-500/20 rounded-xl font-black text-sm hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-2">
+                    <button onClick={() => {
+                      const catQs = mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id);
+                      const stageStart = selectedMahmahStage * 6;
+                      const stageQs = catQs.filter(q => (q.order_number || 1) >= stageStart + 1 && (q.order_number || 1) <= stageStart + 6);
+                      const nextLocal = stageQs.length + 1;
+                      setNewMahmahQuestion({ ...newMahmahQuestion, order_number: nextLocal <= 6 ? stageStart + nextLocal : stageStart + 1 });
+                      setIsAddingMahmahQuestion(true);
+                    }} className="px-6 py-3 bg-indigo-600/10 text-indigo-500 border border-indigo-500/20 rounded-xl font-black text-sm hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-2">
                       <Plus size={18} /> سؤال جديد
                     </button>
                   )}
@@ -1076,19 +1096,51 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                     <img src={selectedMahmahCategory.image_url} alt="cat" className="w-20 h-20 rounded-2xl object-cover border-2 border-indigo-500/50 shadow-[0_0_20px_rgba(79,70,229,0.3)]" />
                     <div>
                       <h2 className="text-3xl font-black text-white">{selectedMahmahCategory.name}</h2>
-                      <p className="text-indigo-400 font-bold">إدارة أسئلة هذه الفئة</p>
+                      <p className="text-indigo-400 font-bold">{(() => {
+                        const catQs = mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id);
+                        const stageCount = Math.max(1, Math.ceil(catQs.length / 6));
+                        return `${catQs.length} أسئلة · ${stageCount} ${stageCount === 1 ? 'مرحلة' : 'مراحل'}`;
+                      })()}</p>
                     </div>
-                    <div className="mr-auto flex items-center gap-3">
-                      <label className="text-xs font-bold text-zinc-400">المراحل:</label>
-                      <select value={selectedMahmahCategory.num_stages || 1} onChange={e => {
-                        const val = parseInt(e.target.value);
-                        setSelectedMahmahCategory({ ...selectedMahmahCategory, num_stages: val });
-                        handleUpdateNumStages(selectedMahmahCategory.id, val);
-                      }} className="bg-black/50 border border-indigo-500/30 text-indigo-400 rounded-xl px-4 py-2 font-black text-sm cursor-pointer focus:outline-none focus:border-indigo-500">
-                        {Array.from({ length: 20 }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n}</option>)}
-                      </select>
-                    </div>
+                    <button onClick={() => { setSelectedMahmahCategory(null); setSelectedMahmahStage(0); }} className="mr-auto px-4 py-2 bg-white/5 border border-white/10 text-white/60 rounded-xl font-bold text-sm hover:bg-white/10 transition-all">← العودة</button>
+                    <button onClick={handleAutoAssignOrder} className="px-4 py-2 bg-amber-600/10 border border-amber-500/20 text-amber-400 rounded-xl font-bold text-xs hover:bg-amber-600 hover:text-white transition-all">ترتيب تلقائي</button>
                   </div>
+
+                  {(() => {
+                    const catQs = mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id);
+                    const totalStages = Math.max(1, Math.ceil(catQs.length / 6));
+                    return totalStages > 0 ? (
+                      <div className="flex gap-3 flex-wrap">
+                        {Array.from({ length: totalStages }, (_, i) => {
+                          const stageStart = i * 6;
+                          const stageEnd = stageStart + 6;
+                          const stageQs = catQs.filter(q => {
+                            const ord = q.order_number || 1;
+                            return ord >= stageStart + 1 && ord <= stageEnd;
+                          });
+                          const isActive = selectedMahmahStage === i;
+                          const colors = ['from-green-500 to-emerald-600', 'from-blue-500 to-indigo-600', 'from-purple-500 to-fuchsia-600', 'from-amber-500 to-orange-600', 'from-red-500 to-rose-600', 'from-cyan-500 to-teal-600'];
+                          return (
+                            <button key={i} onClick={() => setSelectedMahmahStage(i)}
+                              className={`flex items-center gap-3 px-6 py-4 rounded-2xl border-2 font-black transition-all ${
+                                isActive
+                                  ? `bg-gradient-to-br ${colors[i % colors.length]} text-white border-transparent shadow-lg scale-105`
+                                  : 'bg-black/30 border-white/10 text-white/60 hover:border-white/30 hover:bg-white/5'
+                              }`}>
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${isActive ? 'bg-white/20' : 'bg-white/5'}`}>
+                                {i + 1}
+                              </div>
+                              <div className="text-right">
+                                <div className="text-sm">مرحلة {i + 1}</div>
+                                <div className={`text-xs font-bold ${isActive ? 'text-white/80' : 'text-white/40'}`}>{stageQs.length} / 6 أسئلة</div>
+                              </div>
+                              {stageQs.length === 6 && <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-white' : 'bg-green-500'}`} />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : null;
+                  })()}
 
                   {isAddingMahmahQuestion && (
                     <form onSubmit={handleSaveMahmahQuestion} className="bg-indigo-900/10 border border-indigo-500/20 rounded-3xl p-6 space-y-4 shadow-2xl relative overflow-hidden">
@@ -1120,11 +1172,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                           <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">رقم السؤال في المرحلة (1-6)</label>
                           <div className="flex gap-2">
                             {[1,2,3,4,5,6].map(n => {
-                              const active = newMahmahQuestion.order_number === n;
+                              const globalOrder = selectedMahmahStage * 6 + n;
+                              const catQs = mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id);
+                              const taken = catQs.some(q => q.order_number === globalOrder);
+                              const active = newMahmahQuestion.order_number === globalOrder;
                               const ptsLabel = n <= 2 ? '100' : n <= 4 ? '300' : '600';
                               return (
-                                <button key={n} type="button" onClick={() => setNewMahmahQuestion({ ...newMahmahQuestion, order_number: n })}
-                                  className={`flex-1 py-3 rounded-xl border-2 font-black text-lg transition-all ${active ? 'border-indigo-500 bg-indigo-500/10 text-indigo-400' : 'border-white/10 bg-black/50 text-zinc-500 hover:border-white/30'}`}>
+                                <button key={n} type="button" onClick={() => !taken && setNewMahmahQuestion({ ...newMahmahQuestion, order_number: globalOrder })}
+                                  className={`flex-1 py-3 rounded-xl border-2 font-black text-lg transition-all ${taken ? 'border-white/5 bg-white/[0.02] text-zinc-700 cursor-not-allowed' : active ? 'border-indigo-500 bg-indigo-500/10 text-indigo-400' : 'border-white/10 bg-black/50 text-zinc-500 hover:border-white/30'}`}>
                                   {n}
                                   <span className="block text-[10px] font-bold opacity-60">{ptsLabel}</span>
                                 </button>
@@ -1268,14 +1323,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5 font-bold text-sm">
-                        {mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id).sort((a,b) => (a.order_number || 1) - (b.order_number || 1)).map(q => (
+                        {mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id).filter(q => {
+                          const stageStart = selectedMahmahStage * 6;
+                          const ord = q.order_number || 1;
+                          return ord >= stageStart + 1 && ord <= stageStart + 6;
+                        }).sort((a,b) => (a.order_number || 1) - (b.order_number || 1)).map(q => {
+                          const localOrder = (q.order_number || 1) - selectedMahmahStage * 6;
+                          return (
                           <tr key={q.id} className="hover:bg-white/[0.02] transition-colors">
                             <td className="p-4 pl-0">
                               <div className="flex items-center gap-2">
-                                <select value={q.order_number || 1} onChange={e => handleUpdateMahmahOrder(q.id, parseInt(e.target.value))}
-                                  className={`w-14 text-center py-1 rounded-lg border text-xs font-black cursor-pointer bg-black/50 ${q.points === 100 ? 'border-green-500/30 text-green-400' : q.points === 300 ? 'border-yellow-500/30 text-yellow-400' : 'border-red-500/30 text-red-400'}`}>
-                                  {[1,2,3,4,5,6].map(n => <option key={n} value={n}>{n}</option>)}
-                                </select>
+                                <span className={`w-14 text-center py-1 rounded-lg border text-xs font-black ${q.points === 100 ? 'border-green-500/30 text-green-400' : q.points === 300 ? 'border-yellow-500/30 text-yellow-400' : 'border-red-500/30 text-red-400'}`}>
+                                  {localOrder}
+                                </span>
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${q.points === 100 ? 'bg-green-500/20 text-green-400' : q.points === 300 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
                                   {q.points}
                                 </span>
@@ -1298,11 +1358,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                               <button onClick={() => handleDeleteMahmahQuestion(q.id)} className="w-full py-2 bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white rounded-lg transition-colors flex justify-center"><Trash2 size={16} /></button>
                             </td>
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                     </table>
-                    {mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id).length === 0 && (
-                      <div className="py-12 text-center text-zinc-500 font-bold italic">لا توجد أسئلة، أضف أسئلة جديدة.</div>
+                    {mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id).filter(q => {
+                          const stageStart = selectedMahmahStage * 6;
+                          const ord = q.order_number || 1;
+                          return ord >= stageStart + 1 && ord <= stageStart + 6;
+                        }).length === 0 && (
+                      <div className="py-12 text-center text-zinc-500 font-bold italic">لا توجد أسئلة في هذه المرحلة، أضف أسئلة جديدة.</div>
                     )}
                   </div>
                 </div>

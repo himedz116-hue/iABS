@@ -37,6 +37,31 @@ function getTeamByColor(hexColor: string): 'team1' | 'team2' {
     return r > b ? 'team1' : 'team2';
 }
 
+const getArabicStageWord = (num: number): string => {
+    if (num <= 0 || num > 100) return num.toString();
+
+    const fem = [
+        '', 'الأولى', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة',
+        'السادسة', 'السابعة', 'الثامنة', 'التاسعة', 'العاشرة',
+        'الحادية عشرة', 'الثانية عشرة', 'الثالثة عشرة', 'الرابعة عشرة', 'الخامسة عشرة',
+        'السادسة عشرة', 'السابعة عشرة', 'الثامنة عشرة', 'التاسعة عشرة'
+    ];
+
+    if (num <= 19) return fem[num] || num.toString();
+
+    const tens = [
+        '', '', 'العشرون', 'الثلاثون', 'الأربعون', 'الخمسون',
+        'الستون', 'السبعون', 'الثمانون', 'التسعون'
+    ];
+
+    if (num === 100) return 'المائة';
+    if (num % 10 === 0) return tens[num / 10] || num.toString();
+
+    const onesPart = fem[num % 10];
+    const tensPart = tens[Math.floor(num / 10)];
+    return `${onesPart} و ${tensPart}`;
+};
+
 interface Player {
     username: string;
     avatar: string;
@@ -669,7 +694,7 @@ export const LetterHexagonGame: React.FC<LetterHexagonGameProps> = ({ onHome, is
                     </div>
                     <div className="flex items-center gap-2 bg-indigo-600/60 px-4 py-2 rounded-full border border-white/20 backdrop-blur-md shadow-xl">
                         <Trophy className="text-yellow-400" size={12} />
-                        <span className="text-white font-black text-[10px] italic">المرحلة {currentLevel} / 100</span>
+                        <span className="text-white font-black text-[10px] italic">المرحلة {getArabicStageWord(currentLevel)} / 100</span>
                     </div>
                 </div>
             )}
@@ -877,7 +902,7 @@ export const LetterHexagonGame: React.FC<LetterHexagonGameProps> = ({ onHome, is
                                 <div className="bg-indigo-600/10 p-4 rounded-[2rem] border-2 border-indigo-500/30 shadow-2xl">
                                     <label className="flex items-center justify-between text-xs font-black text-indigo-400 mb-2 tracking-widest uppercase">
                                         <span className="flex items-center gap-2"><Trophy size={14} /> أعلى مرحلة وصلتها</span>
-                                        <span className="text-white text-lg">{highestUnlocked} / 100</span>
+                                        <span className="text-white text-lg">{getArabicStageWord(highestUnlocked)} / 100</span>
                                     </label>
                                     <div className="h-2 bg-black/50 rounded-full overflow-hidden border border-indigo-500/20">
                                         <div className="h-full bg-gradient-to-r from-indigo-600 to-purple-500 rounded-full transition-all duration-1000" style={{ width: `${highestUnlocked}%` }}></div>
@@ -986,7 +1011,7 @@ export const LetterHexagonGame: React.FC<LetterHexagonGameProps> = ({ onHome, is
                                 </div>
 
                                 <div className="px-6 py-3 bg-indigo-600 border-2 border-indigo-400/50 rounded-xl text-white font-black text-xl shadow-xl shadow-indigo-600/30">
-                                    المستوى المفتوح: {highestUnlocked}
+                                    المستوى المفتوح: {getArabicStageWord(highestUnlocked)}
                                 </div>
                             </div>
                         </div>
@@ -1049,8 +1074,8 @@ export const LetterHexagonGame: React.FC<LetterHexagonGameProps> = ({ onHome, is
                                                                 onClick={() => { if (!isLocked) { setCurrentLevel(lvl); setStage('lobby'); } }}
                                                                 className={`relative w-36 h-60 transition-all duration-700 hover:scale-110 active:scale-95 flex flex-col items-center justify-center group ${isLocked ? 'cursor-not-allowed grayscale brightness-50' : 'cursor-pointer'}`}
                                                             >
-                                                                <div className={`relative z-20 w-18 h-18 rounded-[1.5rem] flex items-center justify-center font-black text-2xl border-3 shadow-2xl transition-all duration-700 transform ${isLocked ? 'bg-black/90 border-white/5 text-white/5 scale-90' : isCurrent ? 'bg-white border-white text-black scale-125 shadow-[0_0_40px_rgba(255,255,255,0.7)] rotate-3' : isCompleted ? (levelWinners[lvl] === 'team1' ? 'bg-[#FF0000] border-[#ff4d4d] text-white shadow-[#FF0000]/40 shadow-xl' : 'bg-[#0066FF] border-[#4d94ff] text-white shadow-[#0066FF]/40 shadow-xl') : 'bg-[#151525] border-white/10 text-white/40 group-hover:text-white'}`}>
-                                                                    {isLocked ? <Shield size={24} /> : isCompleted ? <Check size={28} strokeWidth={4} /> : lvl}
+                                                                 <div className={`relative z-20 w-18 h-18 rounded-[1.5rem] flex items-center justify-center font-black text-xs border-3 shadow-2xl transition-all duration-700 transform ${isLocked ? 'bg-black/90 border-white/5 text-white/5 scale-90' : isCurrent ? 'bg-white border-white text-black scale-125 shadow-[0_0_40px_rgba(255,255,255,0.7)] rotate-3' : isCompleted ? (levelWinners[lvl] === 'team1' ? 'bg-[#FF0000] border-[#ff4d4d] text-white shadow-[#FF0000]/40 shadow-xl' : 'bg-[#0066FF] border-[#4d94ff] text-white shadow-[#0066FF]/40 shadow-xl') : 'bg-[#151525] border-white/10 text-white/40 group-hover:text-white'}`}>
+                                                                     {isLocked ? <Shield size={24} /> : isCompleted ? <Check size={28} strokeWidth={4} /> : <span className="leading-none">{getArabicStageWord(lvl)}</span>}
                                                                     {!isLocked && (
                                                                         <div className="absolute top-full left-1/2 -translate-x-1/2 w-0.5 h-14 bg-gradient-to-b from-white/40 to-transparent blur-[1px]"></div>
                                                                     )}
@@ -1480,7 +1505,7 @@ export const LetterHexagonGame: React.FC<LetterHexagonGameProps> = ({ onHome, is
                                 {!isOBS && (
                                     <div className="mt-2 inline-flex items-center gap-2 bg-indigo-600 px-4 py-1.5 rounded-full border-2 border-white/20 shadow-xl">
                                         <Trophy size={16} className="text-yellow-400" />
-                                        <span className="font-black text-lg italic uppercase">المرحلة {currentLevel}</span>
+                                        <span className="font-black text-lg italic uppercase">المرحلة {getArabicStageWord(currentLevel)}</span>
                                     </div>
                                 )}
                             </div>
@@ -1872,7 +1897,7 @@ export const LetterHexagonGame: React.FC<LetterHexagonGameProps> = ({ onHome, is
                                 <div className="grid grid-cols-2 gap-3 w-full mt-3">
                                     <div className="bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/5 text-center">
                                         <div className="text-white/40 font-black text-[9px] uppercase mb-1">المرحلة</div>
-                                        <div className="text-2xl font-black text-white italic">{currentLevel - 1}</div>
+                                        <div className="text-2xl font-black text-white italic">{getArabicStageWord(currentLevel - 1)}</div>
                                     </div>
                                     <div className="bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/5 text-center">
                                         <div className="text-white/40 font-black text-[9px] uppercase mb-1">المحاربين</div>
