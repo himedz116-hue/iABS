@@ -165,7 +165,8 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
       const qData = qResult.data;
       
       if (cData && qData) {
-        const fullCats: MahmahCategory[] = cData.map(c => {
+          console.log(`[Mahmah] Raw DB categories:`, cData.map(c => ({ name: c.name, num_stages: c.num_stages, id: c.id })));
+          const fullCats: MahmahCategory[] = cData.map(c => {
           const catQs = qData.filter(q => q.category_id === c.id);
           const gradients = ['from-green-500 to-emerald-700', 'from-blue-500 to-indigo-700', 'from-red-500 to-rose-700', 'from-yellow-500 to-orange-700', 'from-purple-500 to-fuchsia-700', 'from-cyan-500 to-blue-700'];
           const numStages = c.num_stages || getStageCount(catQs.length) || 1;
@@ -923,9 +924,13 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
           const maxStages = selectedCategories.reduce((max, catId) => {
             const cat = dbCategories.find(c => c.id === catId);
             if (!cat) return max;
-            const actual = getActualStageCount(cat.questions || [], cat.num_stages || 1);
+            const qCount = (cat.questions || []).length;
+            const numStages = cat.num_stages || getStageCount(qCount) || 1;
+            const actual = getActualStageCount(cat.questions || [], numStages);
+            console.log(`[Mahmah] Stage bar: ${cat.name} → qCount=${qCount}, num_stages=${cat.num_stages}, numStages=${numStages}, actual=${actual}`);
             return Math.max(max, actual);
           }, 1);
+          console.log(`[Mahmah] Stage bar maxStages=${maxStages}`);
           if (maxStages <= 1) return null;
           return (
             <div className="flex items-center justify-center gap-2 mb-3 px-4">
