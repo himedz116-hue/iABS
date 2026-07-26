@@ -345,10 +345,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
   const handleSetActiveStage = async (stageIdx: number) => {
     if (!selectedMahmahCategory) return;
+    localStorage.setItem(`mahmah_active_stage_${selectedMahmahCategory.id}`, String(stageIdx + 1));
     setIsLoading(true);
-    const { error } = await supabase.from('mahmah_categories').update({ active_stage: stageIdx + 1 }).eq('id', selectedMahmahCategory.id);
-    if (error) showStatus('خطأ: ' + error.message, true);
-    else { showStatus(`المرحلة النشطة: ${stageIdx + 1}`); setSelectedMahmahCategory({ ...selectedMahmahCategory, active_stage: stageIdx + 1 }); fetchData(); }
+    try {
+      const { error } = await supabase.from('mahmah_categories').update({ active_stage: stageIdx + 1 }).eq('id', selectedMahmahCategory.id);
+      if (error) console.warn('[Mahmah] active_stage column may not exist, using localStorage');
+    } catch { console.warn('[Mahmah] active_stage column not in DB, using localStorage'); }
+    setSelectedMahmahCategory({ ...selectedMahmahCategory, active_stage: stageIdx + 1 });
+    showStatus(`تم تحديد المرحلة ${stageIdx + 1} كمرحلة نشطة`);
+    setIsLoading(false);
+    fetchData();
+  };
+
+  const handleRemoveMahmahStage = async () => {
+    if (!selectedMahmahCategory) return;
+    const totalStages = selectedMahmahCategory.num_stages || 1;
+    if (totalStages <= 1) return showStatus('لا يمكن حذف المرحلة الأخيرة', true);
+    if (!confirm(`هل أنت متأكد من حذف المرحلة ${selectedMahmahStage + 1} وجميع أسئلتها؟`)) return;
+    setIsLoading(true);
+    const stageStart = selectedMahmahStage * 6 + 1;
+    const stageEnd = stageStart + 5;
+    const stageQs = mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id && (q.order_number || 1) >= stageStart && (q.order_number || 1) <= stageEnd);
+    if (stageQs.length > 0) {
+      const deletes = stageQs.map(q => supabase.from('mahmah_questions').delete().eq('id', q.id));
+      await Promise.all(deletes);
+    }
+    const newNumStages = totalStages - 1;
+    await supabase.from('mahmah_categories').update({ num_stages: newNumStages }).eq('id', selectedMahmahCategory.id);
+    const allCatQs = mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id && !stageQs.find(sq => sq.id === q.id));
+    const reorders = allCatQs.sort((a,b) => (a.order_number || 1) - (b.order_number || 1)).map((q, i) => supabase.from('mahmah_questions').update({ order_number: i + 1 }).eq('id', q.id));
+    await Promise.all(reorders);
+    setSelectedMahmahStage(Math.min(selectedMahmahStage, newNumStages - 1));
+    setSelectedMahmahCategory({ ...selectedMahmahCategory, num_stages: newNumStages });
+    showStatus('تم حذف المرحلة وترتيب الأسئلة');
+    fetchData();
     setIsLoading(false);
   };
 
@@ -1193,6 +1223,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                           <button onClick={handleAddMahmahStage} className="flex items-center gap-2 px-5 py-4 rounded-2xl border-2 border-dashed border-white/20 text-white/40 hover:border-emerald-500/50 hover:text-emerald-400 hover:bg-emerald-500/5 transition-all font-black text-sm">
                             <Plus size={18} /> إضافة مرحلة
                           </button>
+                          {totalStages > 1 && (
+                            <button onClick={handleRemoveMahmahStage} className="flex items-center gap-2 px-5 py-4 rounded-2xl border-2 border-dashed border-red-500/20 text-red-400/50 hover:border-red-500/50 hover:text-red-400 hover:bg-red-500/5 transition-all font-black text-sm">
+                              <Trash2 size={18} /> حذف المرحلة {selectedMahmahStage + 1}
+                            </button>
+                          )}
                         </div>
                         <div className="text-xs text-zinc-500 font-bold">
                           اضغط على المرحلة لعرض أسئلتها • المرحلة النشطة هي التي تظهر في اللعبة
