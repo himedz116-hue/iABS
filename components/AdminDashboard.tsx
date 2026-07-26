@@ -6,7 +6,7 @@ import {
   Megaphone, Activity, History, Settings, Users,
   Zap, Palette, Eye, EyeOff, RotateCw, Trophy,
   Music, Sparkles, Wind, Flame, Ticket, Fingerprint,
-  Users2, Gavel, Radio, LayoutDashboard, Terminal, X, Clock, LogOut, ShoppingBag, Edit, Plus, Upload, Brain, Bot
+  Users2, Gavel, Radio, LayoutDashboard, Terminal, X, Clock, LogOut, ShoppingBag, Edit, Edit3, Plus, Upload, Brain, Bot
 } from 'lucide-react';
 import { uploadToCloudinary } from '../services/cloudinaryService';
 import { leaderboardService, adminService, supabase, supabaseQuery } from '../services/supabase';
@@ -37,6 +37,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [selectedMahmahStage, setSelectedMahmahStage] = useState<number>(0);
   const [isAddingMahmahCategory, setIsAddingMahmahCategory] = useState(false);
   const [isAddingMahmahQuestion, setIsAddingMahmahQuestion] = useState(false);
+  const [editingMahmahQuestion, setEditingMahmahQuestion] = useState<any>(null);
   const [newMahmahCategory, setNewMahmahCategory] = useState({ name: '', image_url: '', num_stages: 1 });
   const [newMahmahQuestion, setNewMahmahQuestion] = useState({ points: 100, order_number: 1, text: '', answer: '', media_url: '', media_type: '' as string, answer_media_url: '', answer_media_type: '' as string });
   const [uploadingQuestionMedia, setUploadingQuestionMedia] = useState(false);
@@ -329,6 +330,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     const hasError = results.some(r => r.error);
     if (hasError) showStatus('خطأ في التحديث', true);
     else { showStatus('تم ترتيب الأسئلة تلقائياً'); fetchData(); }
+    setIsLoading(false);
+  };
+
+  const handleUpdateMahmahQuestion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMahmahQuestion || !editingMahmahQuestion.text || !editingMahmahQuestion.answer) return showStatus('يرجى ملء جميع الحقول', true);
+    setIsLoading(true);
+    const updateData: any = { points: editingMahmahQuestion.points, order_number: editingMahmahQuestion.order_number, text: editingMahmahQuestion.text, answer: editingMahmahQuestion.answer };
+    if (editingMahmahQuestion.media_url) { updateData.media_url = editingMahmahQuestion.media_url; updateData.media_type = editingMahmahQuestion.media_type || 'image'; }
+    else { updateData.media_url = null; updateData.media_type = null; }
+    if (editingMahmahQuestion.answer_media_url) { updateData.answer_media_url = editingMahmahQuestion.answer_media_url; updateData.answer_media_type = editingMahmahQuestion.answer_media_type || 'image'; }
+    else { updateData.answer_media_url = null; updateData.answer_media_type = null; }
+    const { error } = await supabase.from('mahmah_questions').update(updateData).eq('id', editingMahmahQuestion.id);
+    if (error) showStatus('خطأ في التعديل: ' + error.message, true);
+    else { showStatus('تم التعديل بنجاح'); setEditingMahmahQuestion(null); fetchData(); }
+    setIsLoading(false);
+  };
+
+  const handleMoveMahmahQuestion = async (qId: string, newOrder: number) => {
+    setIsLoading(true);
+    const { error } = await supabase.from('mahmah_questions').update({ order_number: newOrder }).eq('id', qId);
+    if (error) showStatus('خطأ في النقل: ' + error.message, true);
+    else { showStatus('تم نقل السؤال'); fetchData(); }
     setIsLoading(false);
   };
 
@@ -1311,15 +1335,57 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                     </form>
                   )}
 
+                  {editingMahmahQuestion && (
+                    <form onSubmit={handleUpdateMahmahQuestion} className="bg-amber-900/10 border border-amber-500/20 rounded-3xl p-6 space-y-4 shadow-2xl relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
+                      <h3 className="text-xl font-black text-white flex items-center gap-2 mb-4">تعديل السؤال</h3>
+                      <div className="grid grid-cols-1 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">مستوى الصعوبة والنقاط</label>
+                          <div className="flex gap-4">
+                            {[{v:100,l:'سهل',c:'border-green-500 bg-green-500/10 text-green-400'},{v:300,l:'متوسط',c:'border-yellow-500 bg-yellow-500/10 text-yellow-400'},{v:500,l:'صعب',c:'border-red-500 bg-red-500/10 text-red-400'}].map(m => (
+                              <label key={m.v} className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${editingMahmahQuestion.points === m.v ? m.c : 'border-white/10 bg-black/50 text-zinc-500 hover:border-white/30'}`}>
+                                <input type="radio" className="hidden" checked={editingMahmahQuestion.points === m.v} onChange={() => setEditingMahmahQuestion({ ...editingMahmahQuestion, points: m.v })} />
+                                <span className="font-black text-lg">{m.l}</span>
+                                <span className="font-bold text-sm">{m.v} نقطة</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">رقم السؤال العالمي</label>
+                          <input type="number" min={1} max={60} value={editingMahmahQuestion.order_number || 1} onChange={e => setEditingMahmahQuestion({ ...editingMahmahQuestion, order_number: Math.max(1, parseInt(e.target.value) || 1) })}
+                            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold placeholder-white/20 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all" />
+                          <p className="text-zinc-500 text-xs mt-1">المرحلة: {Math.ceil((editingMahmahQuestion.order_number || 1) / 6)} — الموقع: {((editingMahmahQuestion.order_number || 1) - 1) % 6 + 1}</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">نص السؤال</label>
+                          <input type="text" value={editingMahmahQuestion.text} onChange={e => setEditingMahmahQuestion({ ...editingMahmahQuestion, text: e.target.value })}
+                            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold placeholder-white/20 focus:outline-none focus:border-amber-500 transition-all" required />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">الإجابة</label>
+                          <input type="text" value={editingMahmahQuestion.answer} onChange={e => setEditingMahmahQuestion({ ...editingMahmahQuestion, answer: e.target.value })}
+                            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-bold placeholder-white/20 focus:outline-none focus:border-amber-500 transition-all" required />
+                        </div>
+                      </div>
+                      <div className="flex gap-3 justify-end mt-6">
+                        <button type="button" onClick={() => setEditingMahmahQuestion(null)} className="px-6 py-3 bg-white/5 border border-white/10 text-white rounded-xl font-black text-sm hover:bg-white/10 transition-all">إلغاء</button>
+                        <button type="submit" className="px-8 py-3 bg-amber-600 text-white rounded-xl font-black text-sm hover:bg-amber-500 transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)]">حفظ التعديل</button>
+                      </div>
+                    </form>
+                  )}
+
                   <div className="bg-[#0a0a0a] rounded-3xl border border-white/5 overflow-hidden">
                     <table className="w-full text-right border-collapse">
                       <thead>
                         <tr className="bg-black/50 text-zinc-500 text-xs font-black uppercase tracking-widest">
-                          <th className="p-4 pl-0">رقم / نقاط</th>
-                          <th className="p-4">السؤال</th>
-                          <th className="p-4">ميديا</th>
-                          <th className="p-4">الإجابة</th>
-                          <th className="p-4 pr-0 text-center w-20">إجراء</th>
+                          <th className="p-3 pl-0">رقم</th>
+                          <th className="p-3">السؤال</th>
+                          <th className="p-3">الإجابة</th>
+                          <th className="p-3 text-center">رقم السؤال</th>
+                          <th className="p-3 text-center">نقاط</th>
+                          <th className="p-3 pr-0 text-center">إجراءات</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5 font-bold text-sm">
@@ -1329,33 +1395,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                           return ord >= stageStart + 1 && ord <= stageStart + 6;
                         }).sort((a,b) => (a.order_number || 1) - (b.order_number || 1)).map(q => {
                           const localOrder = (q.order_number || 1) - selectedMahmahStage * 6;
+                          const totalCatQs = mahmahQuestions.filter(cq => cq.category_id === selectedMahmahCategory.id).length;
                           return (
                           <tr key={q.id} className="hover:bg-white/[0.02] transition-colors">
-                            <td className="p-4 pl-0">
-                              <div className="flex items-center gap-2">
-                                <span className={`w-14 text-center py-1 rounded-lg border text-xs font-black ${q.points === 100 ? 'border-green-500/30 text-green-400' : q.points === 300 ? 'border-yellow-500/30 text-yellow-400' : 'border-red-500/30 text-red-400'}`}>
-                                  {localOrder}
-                                </span>
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${q.points === 100 ? 'bg-green-500/20 text-green-400' : q.points === 300 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
-                                  {q.points}
-                                </span>
-                              </div>
+                            <td className="p-3 pl-0">
+                              <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-xs font-black ${q.points === 100 ? 'bg-green-500/20 text-green-400 border border-green-500/30' : q.points === 300 ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
+                                {localOrder}
+                              </span>
                             </td>
-                            <td className="p-4 text-white/90">{q.text}</td>
-                            <td className="p-4">
-                              <div className="flex items-center gap-1">
-                                {q.media_type === 'image' && <span className="text-blue-400" title="صورة">🖼️</span>}
-                                {q.media_type === 'video' && <span className="text-purple-400" title="فيديو">🎥</span>}
-                                {q.media_type === 'audio' && <span className="text-pink-400" title="صوت">🎵</span>}
-                                {q.answer_media_type === 'image' && <span className="text-emerald-400" title="صورة إجابة">✅🖼️</span>}
-                                {q.answer_media_type === 'video' && <span className="text-emerald-400" title="فيديو إجابة">✅🎥</span>}
-                                {q.answer_media_type === 'audio' && <span className="text-emerald-400" title="صوت إجابة">✅🎵</span>}
-                                {!q.media_url && !q.answer_media_url && <span className="text-zinc-600">—</span>}
-                              </div>
+                            <td className="p-3 text-white/90 max-w-[200px] truncate">{q.text}</td>
+                            <td className="p-3 text-emerald-400 font-black max-w-[150px] truncate">{q.answer}</td>
+                            <td className="p-3 text-center">
+                              <select value={q.order_number || 1} onChange={e => handleMoveMahmahQuestion(q.id, parseInt(e.target.value))}
+                                className="w-16 text-center py-1 rounded-lg border border-white/10 bg-black/50 text-white text-xs font-black cursor-pointer focus:outline-none focus:border-amber-500">
+                                {Array.from({ length: totalCatQs }, (_, i) => i + 1).map(n => {
+                                  const stageOfN = Math.ceil(n / 6);
+                                  const posInStage = ((n - 1) % 6) + 1;
+                                  return <option key={n} value={n}>م{stageOfN} - {posInStage}</option>;
+                                })}
+                              </select>
                             </td>
-                            <td className="p-4 text-emerald-400 font-black">{q.answer}</td>
-                            <td className="p-4 pr-0">
-                              <button onClick={() => handleDeleteMahmahQuestion(q.id)} className="w-full py-2 bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white rounded-lg transition-colors flex justify-center"><Trash2 size={16} /></button>
+                            <td className="p-3 text-center">
+                              <select value={q.points || 100} onChange={e => { setIsLoading(true); supabase.from('mahmah_questions').update({ points: parseInt(e.target.value) }).eq('id', q.id).then(r => { if (r.error) showStatus('خطأ', true); else { showStatus('تم'); fetchData(); } setIsLoading(false); }) }}
+                                className={`w-16 text-center py-1 rounded-lg border text-xs font-black cursor-pointer bg-black/50 ${q.points === 100 ? 'border-green-500/30 text-green-400' : q.points === 300 ? 'border-yellow-500/30 text-yellow-400' : 'border-red-500/30 text-red-400'}`}>
+                                <option value={100}>100</option>
+                                <option value={300}>300</option>
+                                <option value={500}>500</option>
+                              </select>
+                            </td>
+                            <td className="p-3 pr-0">
+                              <div className="flex gap-1">
+                                <button onClick={() => setEditingMahmahQuestion({ ...q })} className="flex-1 py-2 bg-amber-600/10 text-amber-400 hover:bg-amber-600 hover:text-white rounded-lg transition-colors flex justify-center" title="تعديل"><Edit3 size={14} /></button>
+                                <button onClick={() => handleDeleteMahmahQuestion(q.id)} className="flex-1 py-2 bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white rounded-lg transition-colors flex justify-center" title="حذف"><Trash2 size={14} /></button>
+                              </div>
                             </td>
                           </tr>
                           );
