@@ -306,33 +306,37 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
   // ==========================================
   // START GAME
   // ==========================================
+  const resolveCategoryStage = (catId: string): number => {
+    const cat = dbCategories.find(c => c.id === catId);
+    const lsRaw = localStorage.getItem(`mahmah_active_stage_${catId}`);
+    const lsActive = parseInt(lsRaw || '0');
+    const dbActive = cat ? (cat as any).active_stage : undefined;
+    const active = lsActive ? lsActive - 1 : (dbActive ? dbActive - 1 : 0);
+    const allQs = cat?.questions || [];
+    const maxStage = Math.max(0, Math.floor(allQs.length / QUESTIONS_PER_STAGE) - 1);
+    const clamped = Math.min(active, maxStage);
+    console.log(`[Mahmah] resolveCategoryStage: catId=${catId}, lsRaw="${lsRaw}", dbActive=${dbActive}, active=${active}, clamped=${clamped}`);
+    return clamped;
+  };
+
   const startGame = (stageIdx?: number) => {
-    const resolvedStage = stageIdx ?? (() => {
-      const maxActive = selectedCategories.reduce((max, catId) => {
-        const cat = dbCategories.find(c => c.id === catId);
-        if (!cat) return max;
-        const lsRaw = localStorage.getItem(`mahmah_active_stage_${catId}`);
-        const lsActive = parseInt(lsRaw || '0');
-        const dbActive = (cat as any).active_stage;
-        const active = lsActive ? lsActive - 1 : (dbActive ? dbActive - 1 : 0);
-        console.log(`[Mahmah] Stage resolve: catId=${catId}, lsRaw="${lsRaw}", dbActive=${dbActive}, resolved=${active}`);
-        return Math.max(max, active);
-      }, 0);
-      return maxActive;
-    })();
-    console.log(`[Mahmah] Starting game at stage ${resolvedStage}`);
+    console.log(`[Mahmah] Starting game, stageIdx arg=${stageIdx}`);
     const cats: MahmahCategory[] = [];
+    let maxStage = 0;
     selectedCategories.forEach(catId => {
       const cat = dbCategories.find(c => c.id === catId);
       if (!cat) return;
-      const stageQs = buildStageQuestions(cat.questions || [], resolvedStage);
+      const catStage = stageIdx ?? resolveCategoryStage(catId);
+      if (catStage > maxStage) maxStage = catStage;
+      const stageQs = buildStageQuestions(cat.questions || [], catStage);
+      console.log(`[Mahmah] Category "${cat.name}": ${cat.questions.length} total, stage ${catStage} → ${stageQs.length} questions`);
       cats.push({
         ...cat,
         questions: stageQs,
       });
     });
     setActiveCategories(cats);
-    setCurrentStageIdx(resolvedStage);
+    setCurrentStageIdx(maxStage);
     setAnsweredQs(new Set());
     setCurrentQ(null);
 
@@ -960,8 +964,8 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
         {/* Jeopardy Grid */}
         <div className="flex-1 grid gap-2" style={{ gridTemplateColumns: `repeat(${activeCategories.length}, 1fr)` }}>
           {activeCategories.map((cat) => {
-            const lsRaw = localStorage.getItem(`mahmah_active_stage_${cat.id}`);
-            const catStage = lsRaw ? parseInt(lsRaw) : ((cat as any).active_stage || currentStageIdx + 1);
+            const minOrder = cat.questions.length > 0 ? Math.min(...cat.questions.map(q => q.order_number || 1)) : 1;
+            const catStageNum = Math.floor((minOrder - 1) / QUESTIONS_PER_STAGE) + 1;
             return (
             <div key={cat.id} className="flex flex-col gap-1.5 h-full">
               {/* Category Header */}
@@ -973,7 +977,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
                 <h3 className="text-white font-black text-[11px] leading-tight">{cat.name}</h3>
                 <div className="flex items-center gap-1 mt-0.5">
                   <span className="bg-amber-500/20 text-amber-300 text-[9px] font-black px-2 py-0.5 rounded-full border border-amber-500/30">
-                    المرحلة {catStage}
+                    المرحلة {catStageNum}
                   </span>
                 </div>
               </div>
