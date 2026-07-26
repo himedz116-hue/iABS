@@ -355,9 +355,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
       if (error) console.warn('[Mahmah] active_stage column may not exist, using localStorage');
     } catch { console.warn('[Mahmah] active_stage column not in DB, using localStorage'); }
     setSelectedMahmahCategory({ ...selectedMahmahCategory, active_stage: stageIdx + 1 });
-    showStatus(`تم تحديد المرحلة ${stageIdx + 1} كمرحلة نشطة`);
+    showStatus(`تم تحديد المرحلة ${stageIdx + 1} كمرحلة نشطة ▶`);
     setIsLoading(false);
-    setTimeout(fetchData, 500);
   };
 
   const handleRemoveMahmahStage = async () => {
@@ -1185,7 +1184,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                   {(() => {
                     const catQs = mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id);
                     const totalStages = selectedMahmahCategory.num_stages || Math.max(1, Math.ceil(catQs.length / 6));
-                    const activeStage = (selectedMahmahCategory.active_stage || 1) - 1;
+                    const activeStage = (selectedMahmahCategory.active_stage || parseInt(localStorage.getItem(`mahmah_active_stage_${selectedMahmahCategory.id}`) || '1') || 1) - 1;
                     return (
                       <div className="space-y-3">
                         <div className="flex gap-3 flex-wrap items-center">
@@ -1200,27 +1199,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                             const isPlaying = activeStage === i;
                             const colors = ['from-green-500 to-emerald-600', 'from-blue-500 to-indigo-600', 'from-purple-500 to-fuchsia-600', 'from-amber-500 to-orange-600', 'from-red-500 to-rose-600', 'from-cyan-500 to-teal-600'];
                             return (
-                              <div key={i} className={`relative rounded-2xl border-2 transition-all ${isPlaying ? 'border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.2)]' : 'border-transparent'}`}>
-                                {isPlaying && <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-amber-500 text-black text-[9px] font-black px-2 py-0.5 rounded-full whitespace-nowrap z-10">نشطة في اللعبة ▶</div>}
-                                <button onClick={() => setSelectedMahmahStage(i)}
-                                  className={`flex items-center gap-3 px-6 py-4 rounded-2xl font-black transition-all ${
-                                    isViewing
+                              <button key={i} onClick={() => {
+                                setSelectedMahmahStage(i);
+                                handleSetActiveStage(i);
+                              }}
+                                className={`relative flex items-center gap-3 px-6 py-4 rounded-2xl font-black transition-all border-2 ${
+                                  isPlaying
+                                    ? `bg-gradient-to-br ${colors[i % colors.length]} text-white border-amber-400/60 shadow-lg scale-105 shadow-[0_0_20px_rgba(245,158,11,0.25)]`
+                                    : isViewing
                                       ? `bg-gradient-to-br ${colors[i % colors.length]} text-white border-transparent shadow-lg scale-105`
                                       : 'bg-black/30 border-white/10 text-white/60 hover:border-white/30 hover:bg-white/5'
-                                  }`}>
-                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${isViewing ? 'bg-white/20' : 'bg-white/5'}`}>
-                                    {i + 1}
-                                  </div>
-                                  <div className="text-right">
-                                    <div className="text-sm">مرحلة {i + 1}</div>
-                                    <div className={`text-xs font-bold ${isViewing ? 'text-white/80' : 'text-white/40'}`}>{stageQs.length} / 6 أسئلة</div>
-                                  </div>
-                                  {stageQs.length === 6 && <div className={`w-3 h-3 rounded-full ${isViewing ? 'bg-white' : 'bg-green-500'}`} />}
-                                </button>
-                                <button onClick={() => handleSetActiveStage(i)} className={`w-full mt-1 py-1 text-[10px] font-black rounded-b-2xl transition-all ${isPlaying ? 'bg-amber-500/20 text-amber-400' : 'bg-white/5 text-white/30 hover:bg-white/10 hover:text-white/60'}`}>
-                                  {isPlaying ? '✓ تُلعب في اللعبة' : 'تحديد كمرحلة نشطة'}
-                                </button>
-                              </div>
+                                }`}>
+                                {isPlaying && <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-amber-500 text-black text-[9px] font-black px-2 py-0.5 rounded-full whitespace-nowrap z-10">▶ تُلعب في اللعبة</div>}
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${isViewing || isPlaying ? 'bg-white/20' : 'bg-white/5'}`}>
+                                  {isPlaying ? '▶' : i + 1}
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-sm">مرحلة {i + 1}</div>
+                                  <div className={`text-xs font-bold ${isViewing || isPlaying ? 'text-white/80' : 'text-white/40'}`}>{stageQs.length} / 6 أسئلة</div>
+                                </div>
+                                {stageQs.length === 6 && <div className={`w-3 h-3 rounded-full ${isPlaying ? 'bg-amber-400' : isViewing ? 'bg-white' : 'bg-green-500'}`} />}
+                              </button>
                             );
                           })}
                           <button onClick={handleAddMahmahStage} className="flex items-center gap-2 px-5 py-4 rounded-2xl border-2 border-dashed border-white/20 text-white/40 hover:border-emerald-500/50 hover:text-emerald-400 hover:bg-emerald-500/5 transition-all font-black text-sm">
@@ -1232,8 +1231,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                             </button>
                           )}
                         </div>
-                        <div className="text-xs text-zinc-500 font-bold">
-                          اضغط على المرحلة لعرض أسئلتها • المرحلة النشطة هي التي تظهر في اللعبة
+                        <div className="text-xs text-amber-400/80 font-bold bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2">
+                          اضغط على المرحلة = تظهر أسئلتها + تتحدد كمرحلة تُلعب في اللعبة ▶
                         </div>
                       </div>
                     );
