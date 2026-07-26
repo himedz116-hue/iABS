@@ -1132,8 +1132,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
                   {(() => {
                     const catQs = mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id);
-                    const totalStages = Math.max(1, Math.ceil(catQs.length / 6));
-                    return totalStages > 0 ? (
+                    const totalStages = selectedMahmahCategory.num_stages || Math.max(1, Math.ceil(catQs.length / 6));
+                    return (
                       <div className="flex gap-3 flex-wrap">
                         {Array.from({ length: totalStages }, (_, i) => {
                           const stageStart = i * 6;
@@ -1163,13 +1163,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                           );
                         })}
                       </div>
-                    ) : null;
+                    );
                   })()}
 
                   {isAddingMahmahQuestion && (
                     <form onSubmit={handleSaveMahmahQuestion} className="bg-indigo-900/10 border border-indigo-500/20 rounded-3xl p-6 space-y-4 shadow-2xl relative overflow-hidden">
                       <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
-                      <h3 className="text-xl font-black text-white flex items-center gap-2 mb-4"><Plus size={20} className="text-indigo-500" /> إضافة سؤال</h3>
+                      <h3 className="text-xl font-black text-white flex items-center gap-2 mb-4"><Plus size={20} className="text-indigo-500" /> إضافة سؤال — <span className="text-amber-400">مرحلة {selectedMahmahStage + 1}</span></h3>
+
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">اختر المرحلة</label>
+                        <div className="flex gap-2">
+                          {Array.from({ length: selectedMahmahCategory.num_stages || Math.max(1, Math.ceil(mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id).length / 6)) }, (_, i) => (
+                            <button key={i} type="button" onClick={() => {
+                              const catQs = mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id);
+                              const stageQs = catQs.filter(q => (q.order_number || 1) >= i * 6 + 1 && (q.order_number || 1) <= i * 6 + 6);
+                              setNewMahmahQuestion({ ...newMahmahQuestion, order_number: i * 6 + stageQs.length + 1 });
+                              setSelectedMahmahStage(i);
+                            }}
+                              className={`px-5 py-2 rounded-xl font-black text-sm border-2 transition-all ${selectedMahmahStage === i ? 'border-indigo-500 bg-indigo-500/20 text-indigo-400' : 'border-white/10 bg-black/30 text-white/50 hover:border-white/30'}`}>
+                              المرحلة {i + 1}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                       
                       <div className="grid grid-cols-1 gap-4">
                         <div>
@@ -1383,35 +1400,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                           <th className="p-3 pl-0">رقم</th>
                           <th className="p-3">السؤال</th>
                           <th className="p-3">الإجابة</th>
-                          <th className="p-3 text-center">رقم السؤال</th>
+                          <th className="p-3 text-center">المرحلة والموقع</th>
                           <th className="p-3 text-center">نقاط</th>
                           <th className="p-3 pr-0 text-center">إجراءات</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5 font-bold text-sm">
-                        {mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id).filter(q => {
-                          const stageStart = selectedMahmahStage * 6;
+                        {mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id).sort((a,b) => (a.order_number || 1) - (b.order_number || 1)).map(q => {
                           const ord = q.order_number || 1;
-                          return ord >= stageStart + 1 && ord <= stageStart + 6;
-                        }).sort((a,b) => (a.order_number || 1) - (b.order_number || 1)).map(q => {
-                          const localOrder = (q.order_number || 1) - selectedMahmahStage * 6;
+                          const stageNum = Math.ceil(ord / 6);
+                          const posInStage = ((ord - 1) % 6) + 1;
                           const totalCatQs = mahmahQuestions.filter(cq => cq.category_id === selectedMahmahCategory.id).length;
                           return (
                           <tr key={q.id} className="hover:bg-white/[0.02] transition-colors">
                             <td className="p-3 pl-0">
                               <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-xs font-black ${q.points === 100 ? 'bg-green-500/20 text-green-400 border border-green-500/30' : q.points === 300 ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
-                                {localOrder}
+                                {posInStage}
                               </span>
                             </td>
                             <td className="p-3 text-white/90 max-w-[200px] truncate">{q.text}</td>
                             <td className="p-3 text-emerald-400 font-black max-w-[150px] truncate">{q.answer}</td>
                             <td className="p-3 text-center">
                               <select value={q.order_number || 1} onChange={e => handleMoveMahmahQuestion(q.id, parseInt(e.target.value))}
-                                className="w-16 text-center py-1 rounded-lg border border-white/10 bg-black/50 text-white text-xs font-black cursor-pointer focus:outline-none focus:border-amber-500">
+                                className={`w-20 text-center py-1 rounded-lg border text-xs font-black cursor-pointer bg-black/50 focus:outline-none focus:border-amber-500 ${stageNum === selectedMahmahStage + 1 ? 'border-amber-500/50 text-amber-400' : 'border-white/10 text-white/60'}`}>
                                 {Array.from({ length: totalCatQs }, (_, i) => i + 1).map(n => {
-                                  const stageOfN = Math.ceil(n / 6);
-                                  const posInStage = ((n - 1) % 6) + 1;
-                                  return <option key={n} value={n}>م{stageOfN} - {posInStage}</option>;
+                                  const s = Math.ceil(n / 6);
+                                  const p = ((n - 1) % 6) + 1;
+                                  return <option key={n} value={n}>م{s} - {p}</option>;
                                 })}
                               </select>
                             </td>
@@ -1434,12 +1449,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                         })}
                       </tbody>
                     </table>
-                    {mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id).filter(q => {
-                          const stageStart = selectedMahmahStage * 6;
-                          const ord = q.order_number || 1;
-                          return ord >= stageStart + 1 && ord <= stageStart + 6;
-                        }).length === 0 && (
-                      <div className="py-12 text-center text-zinc-500 font-bold italic">لا توجد أسئلة في هذه المرحلة، أضف أسئلة جديدة.</div>
+                    {mahmahQuestions.filter(q => q.category_id === selectedMahmahCategory.id).length === 0 && (
+                      <div className="py-12 text-center text-zinc-500 font-bold italic">لا توجد أسئلة، أضف أسئلة جديدة.</div>
                     )}
                   </div>
                 </div>
