@@ -949,7 +949,6 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
           <div className="flex items-center gap-3">
             <button onClick={onBack} className="text-white/30 hover:text-white/70 transition-colors"><Home size={20} /></button>
             <h1 className="text-3xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-yellow-500">محمح</h1>
-            <span className="bg-amber-500/20 text-amber-300 text-xs font-black px-3 py-1 rounded-full border border-amber-500/30">المرحلة {currentStageIdx + 1}</span>
           </div>
           <div className="bg-white/10 px-4 py-1.5 rounded-full text-white/70 font-bold text-sm flex items-center gap-2">
             {mode === 'chat' ? <><MessageCircle size={14} /> طور الشات</> : <><Users size={14} /> طور الأصدقاء</>}
@@ -961,26 +960,24 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
         {/* Jeopardy Grid */}
         <div className="flex-1 grid gap-2" style={{ gridTemplateColumns: `repeat(${activeCategories.length}, 1fr)` }}>
           {activeCategories.map((cat) => {
-            const stageNum = currentStageIdx + 1;
+            const totalStages = cat.num_stages || 1;
+            const showStage = totalStages > 1;
             return (
             <div key={cat.id} className="flex flex-col gap-1.5 h-full">
               {/* Category Header */}
               <div className="bg-gradient-to-b from-white/10 to-white/5 border border-amber-500/30 rounded-xl p-2 flex flex-col items-center justify-center text-center shadow-lg h-[90px] relative overflow-hidden group">
                 <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${cat.gradient || 'from-amber-400 to-yellow-500'}`} />
-                <div className="absolute -top-0.5 -right-0.5">
-                  <div className="bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-[10px] font-black px-2.5 py-0.5 rounded-bl-xl rounded-tr-xl">
-                    المرحلة {stageNum}
+                {showStage && (
+                  <div className="absolute -top-0.5 -right-0.5">
+                    <div className="bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-[10px] font-black px-2.5 py-0.5 rounded-bl-xl rounded-tr-xl">
+                      المرحلة {currentStageIdx + 1}
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center mb-1 shadow-inner overflow-hidden">
                   {cat.image_url ? <img src={cat.image_url} alt="" className="w-full h-full object-cover" /> : <span className="text-white/50">?</span>}
                 </div>
                 <h3 className="text-white font-black text-[11px] leading-tight">{cat.name}</h3>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <span className="bg-amber-500/20 text-amber-300 text-[9px] font-black px-2 py-0.5 rounded-full border border-amber-500/30">
-                    المرحلة {stageNum}
-                  </span>
-                </div>
               </div>
               
               {/* Question Boxes */}
