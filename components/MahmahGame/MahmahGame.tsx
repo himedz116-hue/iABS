@@ -919,32 +919,7 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
           </div>
         </div>
 
-        {/* Stage Navigation Bar */}
-        {(() => {
-          const maxStages = selectedCategories.reduce((max, catId) => {
-            const cat = dbCategories.find(c => c.id === catId);
-            if (!cat) return max;
-            const qCount = (cat.questions || []).length;
-            const numStages = cat.num_stages || getStageCount(qCount) || 1;
-            const actual = getActualStageCount(cat.questions || [], numStages);
-            console.log(`[Mahmah] Stage bar: ${cat.name} → qCount=${qCount}, num_stages=${cat.num_stages}, numStages=${numStages}, actual=${actual}`);
-            return Math.max(max, actual);
-          }, 1);
-          console.log(`[Mahmah] Stage bar maxStages=${maxStages}`);
-          if (maxStages <= 1) return null;
-          return (
-            <div className="flex items-center justify-center gap-2 mb-3 px-4">
-              <span className="text-white/40 font-bold text-xs ml-2">المراحل:</span>
-              {Array.from({ length: maxStages }, (_, i) => (
-                <button key={i} onClick={() => switchStage(i)}
-                  className={`relative px-5 py-2 rounded-xl font-black text-sm transition-all ${currentStageIdx === i ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.15)]' : 'bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 hover:text-white/60'}`}>
-                  المرحلة {i + 1}
-                  {currentStageIdx === i && <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-400 rounded-full" />}
-                </button>
-              ))}
-            </div>
-          );
-        })()}
+
 
         {/* Jeopardy Grid */}
         <div className="flex-1 grid gap-2" style={{ gridTemplateColumns: `repeat(${activeCategories.length}, 1fr)` }}>
