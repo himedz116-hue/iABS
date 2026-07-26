@@ -312,8 +312,10 @@ export const MahmahGame: React.FC<MahmahGameProps> = ({ onBack }) => {
         const cat = dbCategories.find(c => c.id === catId);
         if (!cat) return max;
         const dbActive = (cat as any).active_stage;
-        const lsActive = parseInt(localStorage.getItem(`mahmah_active_stage_${catId}`) || '0');
+        const lsRaw = localStorage.getItem(`mahmah_active_stage_${catId}`);
+        const lsActive = parseInt(lsRaw || '0');
         const active = dbActive ? dbActive - 1 : (lsActive ? lsActive - 1 : 0);
+        console.log(`[Mahmah] Stage resolve: catId=${catId}, dbActive=${dbActive}, lsRaw="${lsRaw}", lsActive=${lsActive}, active=${active}`);
         return Math.max(max, active);
       }, 0);
       return maxActive;

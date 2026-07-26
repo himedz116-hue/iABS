@@ -345,7 +345,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
   const handleSetActiveStage = async (stageIdx: number) => {
     if (!selectedMahmahCategory) return;
-    localStorage.setItem(`mahmah_active_stage_${selectedMahmahCategory.id}`, String(stageIdx + 1));
+    const key = `mahmah_active_stage_${selectedMahmahCategory.id}`;
+    const val = String(stageIdx + 1);
+    localStorage.setItem(key, val);
+    console.log(`[Admin] Saved active_stage: key="${key}" value="${val}" readback="${localStorage.getItem(key)}"`);
     setIsLoading(true);
     try {
       const { error } = await supabase.from('mahmah_categories').update({ active_stage: stageIdx + 1 }).eq('id', selectedMahmahCategory.id);
@@ -354,7 +357,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     setSelectedMahmahCategory({ ...selectedMahmahCategory, active_stage: stageIdx + 1 });
     showStatus(`تم تحديد المرحلة ${stageIdx + 1} كمرحلة نشطة`);
     setIsLoading(false);
-    fetchData();
+    setTimeout(fetchData, 500);
   };
 
   const handleRemoveMahmahStage = async () => {
