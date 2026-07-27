@@ -326,6 +326,32 @@ export const leaderboardService = {
   }
 };
 
+export const storeService = {
+  async getFrames() {
+    if (!isConfigured) return { data: [], error: null };
+    return safeCall(
+      supabase
+        .from('store_items')
+        .select('*')
+        .eq('type', 'FRAME')
+        .eq('is_active', true)
+        .order('price', { ascending: true }),
+      { data: [], error: null }
+    );
+  },
+  async getAllItems() {
+    if (!isConfigured) return { data: [], error: null };
+    return safeCall(
+      supabase
+        .from('store_items')
+        .select('*')
+        .eq('is_active', true)
+        .order('price', { ascending: true }),
+      { data: [], error: null }
+    );
+  }
+};
+
 export const gamesService = {
   async getAllGames() {
     if (!isConfigured) return { data: [], error: null };

@@ -186,8 +186,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onChangeV
           }}
         ></div>
 
-        {/* Streamer Facecam Frame */}
-        {isAuthorized && currentView !== 'ABOUT' && (
+        {/* Streamer Facecam Frame - Only for Admin/Streamer, NOT for regular users */}
+        {isAuthorized && userRole === 'admin' && currentView !== 'ABOUT' && (
           <div className="absolute top-8 left-8 w-[400px] h-[225px] pointer-events-none z-[100]">
             {/* Bottom Line (fades to left) */}
             <div className="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-l from-red-500 via-red-600 to-transparent shadow-[0_0_20px_rgba(239,68,68,0.6)]"></div>
