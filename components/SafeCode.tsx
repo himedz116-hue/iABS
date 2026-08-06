@@ -60,7 +60,7 @@ export const SafeCode: React.FC<SafeCodeProps> = ({ onHome, isOBS }) => {
 
       const content = msg.content.trim();
       
-      const match = content.match(/\d{4}/);
+      const match = content.match(/^\d{4}$/);
       
       if (match) {
         const guess = match[0];
