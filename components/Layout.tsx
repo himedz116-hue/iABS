@@ -21,8 +21,18 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children, currentView, onChangeView, onOBSLinks, onToggleOBSPreview, obsPreviewActive, obsPreviewSlot, isAuthorized, userRole }) => {
-  const [chatOpen, setChatOpen] = useState(true);
+  const [chatOpen, setChatOpen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return window.innerWidth >= 1024;
+  });
   const [sidebarWidth, setSidebarWidth] = useState(340); // Default Width
+
+  const toggleChat = (open: boolean) => {
+    setChatOpen(open);
+    if (open && typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setSidebarWidth(Math.min(340, Math.round(window.innerWidth * 0.85)));
+    }
+  };
 
   const viewBg = (view: ViewState) => {
     switch (view) {
@@ -43,13 +53,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onChangeV
   const isHome = currentView === 'HOME' || (currentView as string) === 'ADMIN_LOGIN' || currentView === 'ABOUT';
 
   return (
-    <div className="h-screen w-screen flex bg-black overflow-hidden font-sans" dir="rtl">
+    <div className="app-shell flex bg-black overflow-hidden font-sans" dir="rtl">
 
       {/* Sidebar Container */}
       {isAuthorized && currentView !== 'USER_DASHBOARD' && currentView !== 'ABOUT' && (
         <aside
           style={{ width: chatOpen ? `${sidebarWidth}px` : '0px' }}
-          className="h-full transition-all duration-500 ease-in-out border-l border-white/5 flex-shrink-0 z-50 flex flex-col bg-[#050505] shadow-[20px_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden"
+          className="fixed lg:static inset-y-0 right-0 lg:inset-auto z-[200] lg:z-50 h-full transition-all duration-500 ease-in-out border-l border-white/5 flex-shrink-0 flex flex-col bg-[#050505] shadow-[20px_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden"
         >
           {/* --- MODERN COMMAND BAR (ABOVE CHAT) --- */}
           <div className="h-9 shrink-0 bg-gradient-to-l from-red-600/10 via-black to-black border-b border-white/5 flex items-center justify-between px-2 z-30">
@@ -81,7 +91,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onChangeV
               </button>
               <div className="w-px h-2.5 bg-white/10"></div>
               <button
-                onClick={() => setChatOpen(false)}
+                onClick={() => toggleChat(false)}
                 title="إخفاء"
                 className="p-1 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white transition-all rounded active:scale-90"
               >
@@ -175,6 +185,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onChangeV
         </aside>
       )}
 
+      {/* Mobile drawer backdrop */}
+      {isAuthorized && chatOpen && currentView !== 'USER_DASHBOARD' && currentView !== 'ABOUT' && (
+        <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-sm lg:hidden" onClick={() => toggleChat(false)} />
+      )}
+
       {/* Main Game Area */}
       <main className="flex-1 relative flex flex-col h-full overflow-hidden bg-black">
         {/* Global Background Layer */}
@@ -188,7 +203,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onChangeV
 
         {/* Streamer Facecam Frame - Only for Admin/Streamer, NOT for regular users */}
         {isAuthorized && userRole === 'admin' && currentView !== 'ABOUT' && (
-          <div className="absolute top-8 left-8 w-[400px] h-[225px] pointer-events-none z-[100]">
+          <div className="absolute top-8 left-8 w-[400px] h-[225px] pointer-events-none z-[100] hidden lg:block">
             {/* Bottom Line (fades to left) */}
             <div className="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-l from-red-500 via-red-600 to-transparent shadow-[0_0_20px_rgba(239,68,68,0.6)]"></div>
             {/* Right Line (fades to top) */}
@@ -208,7 +223,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onChangeV
 
         {/* Content Container */}
         {/* Added pr-[350px] padding for top area to prevent overlap if elements try to align right */}
-        <div className="flex-1 w-full h-full relative z-10 overflow-y-auto overflow-x-hidden flex flex-col items-center">
+        <div className="flex-1 w-full h-full relative z-10 overflow-y-auto overflow-x-hidden flex flex-col items-center pb-[env(safe-area-inset-bottom)]">
           {children}
         </div>
       </main>
@@ -216,8 +231,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onChangeV
       {/* Re-Open Chat Button (Visible only when chat is closed) */}
       {isAuthorized && !chatOpen && currentView !== 'USER_DASHBOARD' && currentView !== 'ABOUT' && (
         <button
-          onClick={() => setChatOpen(true)}
-          className="fixed bottom-20 left-3 z-[100] p-2.5 bg-red-600 text-white rounded-xl shadow-[0_0_30px_rgba(255,0,0,0.5)] hover:scale-110 active:scale-95 transition-all border border-white/20 animate-in slide-in-from-left-20 duration-500"
+          onClick={() => toggleChat(true)}
+          className="fixed bottom-20 right-3 z-[100] p-2.5 bg-red-600 text-white rounded-xl shadow-[0_0_30px_rgba(255,0,0,0.5)] hover:scale-110 active:scale-95 transition-all border border-white/20 animate-in slide-in-from-left-20 duration-500"
         >
           <MessageSquare size={16} strokeWidth={2.5} className="drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
         </button>

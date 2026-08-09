@@ -7,6 +7,32 @@
   --kick-green: #53fc18;
 }
 
+/* Dynamic viewport height helpers (fix mobile address-bar cut-offs) */
+.app-shell,
+.h-screen-dvh,
+.min-h-screen-dvh {
+  height: 100vh;
+  height: 100dvh;
+}
+
+.min-h-screen-dvh {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Mobile: allow the document to scroll naturally when app shell falls back */
+@media (max-width: 1023px) {
+  body,
+  html {
+    overscroll-behavior-y: contain;
+  }
+}
+
+/* Disable tap-highlight flash on touch devices for a cleaner feel */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 body.obs-mode {
   background: transparent !important;
   background-color: transparent !important;

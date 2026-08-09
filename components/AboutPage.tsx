@@ -675,9 +675,9 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
             </div>
           </div>
 
-          <div className="flex items-center justify-center gap-3 md:gap-5 mb-4 relative">
+          <div className="flex items-center justify-center gap-2 md:gap-5 mb-4 relative">
             {/* ARENA - Red Fire Effect */}
-            <span className="text-7xl md:text-[5rem] font-black tracking-tighter leading-none relative"
+            <span className="text-5xl md:text-[5rem] font-black tracking-tighter leading-none relative"
                   style={{
                     color: '#ff0000',
                     textShadow: '0 0 20px rgba(255,0,0,0.8), 0 0 40px rgba(255,0,0,0.6), 0 0 80px rgba(255,0,0,0.4), 0 0 120px rgba(255,0,0,0.2), 0 0 200px rgba(255,0,0,0.1)',
@@ -698,7 +698,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
             </div>
             
             {/* ABS - Pure White */}
-            <span className="text-white text-7xl md:text-[5rem] font-black tracking-tighter leading-none drop-shadow-[0_0_40px_rgba(255,255,255,0.5)]" 
+            <span className="text-white text-5xl md:text-[5rem] font-black tracking-tighter leading-none drop-shadow-[0_0_40px_rgba(255,255,255,0.5)]" 
                   style={{textShadow: '0 0 30px rgba(255,255,255,0.6), 0 0 60px rgba(255,255,255,0.3), 0 0 100px rgba(255,255,255,0.1)'}}>
               ABS
             </span>
@@ -709,22 +709,22 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent animate-shimmer" />
           </div>
 
-          <p className="text-2xl md:text-3xl text-white/70 font-black max-w-2xl mx-auto leading-relaxed mb-3">
+          <p className="text-xl md:text-3xl text-white/70 font-black max-w-2xl mx-auto leading-relaxed mb-3">
             أكبر منصة ألعاب تفاعلية للبثوث المباشرة في العالم العربي
           </p>
-          <p className="text-lg md:text-xl text-white/30 font-bold max-w-xl mx-auto leading-relaxed mb-10">
+          <p className="text-base md:text-xl text-white/30 font-bold max-w-xl mx-auto leading-relaxed mb-10">
             العب مع الشات مباشرة في بثوث{' '}
             <span className="text-red-500 font-black">iABS</span> على منصة{' '}
             <span className="text-green-500 font-black">Kick.com</span>
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-5 mb-16">
-            <button onClick={onBack} className="group relative px-10 py-5 bg-gradient-to-r from-red-600 via-red-700 to-rose-700 rounded-2xl font-black text-lg text-white hover:scale-105 active:scale-95 transition-all shadow-[0_0_50px_rgba(239,68,68,0.4)] overflow-hidden flex items-center gap-3 border border-red-400/30">
+          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-5 mb-16">
+            <button onClick={onBack} className="group relative w-full sm:w-auto px-8 sm:px-10 py-4 sm:py-5 bg-gradient-to-r from-red-600 via-red-700 to-rose-700 rounded-2xl font-black text-base sm:text-lg text-white hover:scale-105 active:scale-95 transition-all shadow-[0_0_50px_rgba(239,68,68,0.4)] overflow-hidden flex items-center justify-center gap-3 border border-red-400/30">
               <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/15 to-white/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 skew-x-[-20deg]" />
               <Gamepad2 size={24} className="relative z-10" />
               <span className="relative z-10">دخول الساحة الرئيسية</span>
             </button>
-            <a href="https://kick.com/iabs" target="_blank" rel="noopener noreferrer" className="group relative px-8 py-5 bg-black/40 backdrop-blur-xl border border-green-500/30 hover:border-green-400/60 rounded-2xl font-black text-lg text-white hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(34,197,94,0.15)] overflow-hidden flex items-center gap-3">
+            <a href="https://kick.com/iabs" target="_blank" rel="noopener noreferrer" className="group relative w-full sm:w-auto px-6 sm:px-8 py-4 sm:py-5 bg-black/40 backdrop-blur-xl border border-green-500/30 hover:border-green-400/60 rounded-2xl font-black text-base sm:text-lg text-white hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(34,197,94,0.15)] overflow-hidden flex items-center justify-center gap-3">
               <div className="absolute inset-0 bg-gradient-to-r from-green-400/0 via-green-400/10 to-green-400/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 skew-x-[-20deg]" />
               <Play size={20} className="relative z-10 text-green-400" />
               <span className="relative z-10 text-green-400">شاهد البث على Kick</span>
@@ -752,10 +752,10 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
       </section>
 
       {/* ============ ABOUT SECTION ============ */}
-      <section id="about-iabs" data-animate-section className={`relative py-28 px-4 transition-all duration-1000 ${visibleSections.has('about-iabs') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      <section id="about-iabs" data-animate-section className={`relative py-14 md:py-28 px-4 transition-all duration-1000 ${visibleSections.has('about-iabs') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-red-600/6 blur-[150px] rounded-full" />
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-8 md:mb-16">
             <span className="text-red-500 font-black uppercase tracking-[0.3em] text-xs">من نحن</span>
             <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter mt-4 mb-4">
             <span className="text-red-500">ABS </span><span className="text-white">ARENA</span>
@@ -796,10 +796,10 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
       </section>
 
       {/* ============ JOIN THE ARENA SECTION ============ */}
-      <section id="join-arena" data-animate-section className={`relative py-32 px-4 transition-all duration-1000 ${visibleSections.has('join-arena') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      <section id="join-arena" data-animate-section className={`relative py-14 md:py-32 px-4 transition-all duration-1000 ${visibleSections.has('join-arena') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-red-950/10 to-transparent" />
         <div className="max-w-6xl mx-auto relative z-10">
-          <div className="text-center mb-16">
+          <div className="text-center mb-8 md:mb-16">
             <span className="text-red-500 font-black uppercase tracking-[0.3em] text-xs">انضم الآن</span>
             <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter mt-4 mb-4">
               <span className="text-white">سجّل في </span>
@@ -1144,10 +1144,10 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
       </section>
 
       {/* ============ HOW IT WORKS ============ */}
-      <section id="how-it-works" data-animate-section className={`relative py-32 px-4 transition-all duration-1000 ${visibleSections.has('how-it-works') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      <section id="how-it-works" data-animate-section className={`relative py-14 md:py-32 px-4 transition-all duration-1000 ${visibleSections.has('how-it-works') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-red-950/5 to-transparent" />
         <div className="max-w-5xl mx-auto relative z-10">
-          <div className="text-center mb-16">
+          <div className="text-center mb-8 md:mb-16">
             <span className="text-red-500 font-black uppercase tracking-[0.3em] text-xs">كيف تلعب؟</span>
             <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter mt-4 mb-4">
               <span className="text-white">ثلاث خطوات </span>
@@ -1175,10 +1175,10 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
       </section>
 
       {/* ============ ADVANCED STATS SECTION ============ */}
-      <section id="advanced-stats" data-animate-section className={`relative py-32 px-4 transition-all duration-1000 ${visibleSections.has('advanced-stats') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      <section id="advanced-stats" data-animate-section className={`relative py-14 md:py-32 px-4 transition-all duration-1000 ${visibleSections.has('advanced-stats') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-950/10 to-transparent" />
         <div className="max-w-6xl mx-auto relative z-10">
-          <div className="text-center mb-16">
+          <div className="text-center mb-8 md:mb-16">
             <span className="text-blue-500 font-black uppercase tracking-[0.3em] text-xs">الأرقام</span>
             <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter mt-4 mb-4">
               <span className="text-white">الساحة </span>
@@ -1234,10 +1234,10 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
       </section>
 
       {/* ============ LEADERBOARD SECTION ============ */}
-      <section id="leaderboard" data-animate-section className={`relative py-32 px-4 transition-all duration-1000 ${visibleSections.has('leaderboard') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      <section id="leaderboard" data-animate-section className={`relative py-14 md:py-32 px-4 transition-all duration-1000 ${visibleSections.has('leaderboard') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-yellow-950/5 to-transparent" />
         <div className="max-w-5xl mx-auto relative z-10">
-          <div className="text-center mb-12">
+          <div className="text-center mb-6 md:mb-12">
             <span className="text-yellow-500 font-black uppercase tracking-[0.3em] text-xs">لوحة الصدارة</span>
             <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter mt-4 mb-4">
               <span className="text-white">أساطير </span>
@@ -1383,9 +1383,9 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
       </section>
 
       {/* ============ ALL GAMES SECTION ============ */}
-      <section id="all-games" data-animate-section className={`relative py-32 px-4 transition-all duration-1000 ${visibleSections.has('all-games') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      <section id="all-games" data-animate-section className={`relative py-14 md:py-32 px-4 transition-all duration-1000 ${visibleSections.has('all-games') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
+          <div className="text-center mb-6 md:mb-12">
             <span className="text-red-500 font-black uppercase tracking-[0.3em] text-xs">الألعاب</span>
             <h2 className="text-4xl md:text-6xl font-black italic tracking-tighter mt-4 mb-4">
               <span className="text-white">كل الألعاب في </span>
@@ -1481,10 +1481,10 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
       </section>
 
       {/* ============ TECH & DEVELOPERS SECTION ============ */}
-      <section id="tech-stack" data-animate-section className={`relative py-32 px-4 transition-all duration-1000 ${visibleSections.has('tech-stack') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      <section id="tech-stack" data-animate-section className={`relative py-14 md:py-32 px-4 transition-all duration-1000 ${visibleSections.has('tech-stack') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-950/5 to-transparent" />
         <div className="max-w-6xl mx-auto relative z-10">
-          <div className="text-center mb-16">
+          <div className="text-center mb-8 md:mb-16">
             <span className="text-cyan-500 font-black uppercase tracking-[0.3em] text-xs">التقنيات</span>
             <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter mt-4 mb-4">
               <span className="text-white">نبني </span>
@@ -1550,10 +1550,10 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
       </section>
 
       {/* ============ FAQ SECTION ============ */}
-      <section id="faq" data-animate-section className={`relative py-32 px-4 transition-all duration-1000 ${visibleSections.has('faq') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      <section id="faq" data-animate-section className={`relative py-14 md:py-32 px-4 transition-all duration-1000 ${visibleSections.has('faq') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-orange-950/5 to-transparent" />
         <div className="max-w-4xl mx-auto relative z-10">
-          <div className="text-center mb-16">
+          <div className="text-center mb-8 md:mb-16">
             <span className="text-orange-500 font-black uppercase tracking-[0.3em] text-xs">استفسارات</span>
             <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter mt-4 mb-4">
               <span className="text-white">الأسئلة </span>
@@ -1593,7 +1593,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
       </section>
 
       {/* ============ KICK EXCLUSIVE ============ */}
-      <section id="kick-exclusive" data-animate-section className={`relative py-32 px-4 transition-all duration-1000 ${visibleSections.has('kick-exclusive') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      <section id="kick-exclusive" data-animate-section className={`relative py-14 md:py-32 px-4 transition-all duration-1000 ${visibleSections.has('kick-exclusive') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-green-950/5 to-transparent" />
         <div className="max-w-5xl mx-auto relative z-10">
           <div className="bg-gradient-to-br from-green-900/20 to-black/50 border border-green-500/20 rounded-[3rem] p-10 md:p-16 relative overflow-hidden">

@@ -277,7 +277,7 @@ export const GlobalPasswordPage: React.FC<GlobalPasswordPageProps> = ({
             </div>
 
             {/* Content Container - Perfectly Centered */}
-            <div className="relative z-10 w-full flex flex-col items-center justify-center min-h-screen">
+            <div className="relative z-10 w-full flex flex-col items-center justify-center min-h-full">
 
                 {/* --- PASSWORD STEP --- */}
                 {step === 'PASSWORD' && (
@@ -338,7 +338,7 @@ export const GlobalPasswordPage: React.FC<GlobalPasswordPageProps> = ({
 
 
                 {(step === 'FINGERPRINT' || step === 'SCANNING') && (
-                    <div className="flex flex-col items-center justify-center w-full min-h-screen bg-black relative overflow-hidden">
+                    <div className="flex flex-col items-center justify-center w-full min-h-full bg-black relative overflow-hidden">
 
                         {step === 'FINGERPRINT' && (
                             <button onClick={() => { setStep('PASSWORD'); setPin(new Array(6).fill('')); setTimeout(() => inputs.current[0]?.focus(), 100); }}

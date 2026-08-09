@@ -3,10 +3,12 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="description" content="iABS | أكبر منصة ألعاب تفاعلية للبثوث المباشرة - العب مع الشات مباشرة على Kick.com">
   <title>iABS | إي إيه بي إس - فوازير</title>
 
   <!-- Favicon Updated to new logo -->
@@ -65,10 +67,30 @@
       margin: 0;
       padding: 0;
       min-height: 100vh;
+      min-height: 100dvh;
       background-color: #000000;
       color: white;
       font-family: 'Tajawal', 'sans-serif';
-      overflow: hidden;
+      overflow-x: hidden;
+    }
+
+    html {
+      min-height: 100vh;
+      min-height: 100dvh;
+      background-color: #000000;
+    }
+
+    /* App shell: full dynamic viewport height (fixes mobile black/cut-off bars) */
+    .app-shell {
+      height: 100vh;
+      height: 100dvh;
+      width: 100vw;
+    }
+
+    /* Ensure content always scrolls inside mobile browsers */
+    #root {
+      min-height: 100vh;
+      min-height: 100dvh;
     }
 
     .game-bg-main {
