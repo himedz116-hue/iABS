@@ -7,11 +7,17 @@ export interface ChatUser {
   isBot?: boolean;
 }
 
+export interface ChatBadge {
+  type: string;
+  text?: string;
+}
+
 export interface ChatMessage {
   id: string;
   user: ChatUser;
   content: string;
-  role: 'owner' | 'moderator' | 'vip' | 'user';
+  role: 'owner' | 'moderator' | 'vip' | 'subscriber' | 'founder' | 'gifter' | 'user';
+  badges?: ChatBadge[];
   timestamp: number;
   deleted?: boolean;
 }

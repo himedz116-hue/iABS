@@ -51,8 +51,27 @@ export const MapGuesser: React.FC<MapGuesserProps> = ({ onHome, isOBS }) => {
   const [roundsToPlay, setRoundsToPlay] = useState(1);
   const [currentRound, setCurrentRound] = useState(1);
   const [difficulty, setDifficulty] = useState<'EASY' | 'MEDIUM' | 'HARD'>('HARD');
-  const [playedCountries, setPlayedCountries] = useState<string[]>([]);
   const [skippedMessage, setSkippedMessage] = useState<string | null>(null);
+
+  // Tracks every country already used, per difficulty, so they never repeat
+  // while playing. Persists across separate games until that pool is exhausted.
+  const playedRef = useRef<Record<'EASY' | 'MEDIUM' | 'HARD', Set<string>>>({
+    EASY: new Set(),
+    MEDIUM: new Set(),
+    HARD: new Set()
+  });
+
+  const difficultyCounts = {
+    EASY: COUNTRIES.filter(c => c.difficulty === 'EASY').length,
+    MEDIUM: COUNTRIES.filter(c => c.difficulty === 'MEDIUM' || c.difficulty === 'HARD').length,
+    HARD: COUNTRIES.filter(c => c.difficulty === 'HARD').length
+  };
+
+  const getDifficultyPool = (diff: 'EASY' | 'MEDIUM' | 'HARD') => {
+    if (diff === 'EASY') return COUNTRIES.filter(c => c.difficulty === 'EASY');
+    if (diff === 'HARD') return COUNTRIES.filter(c => c.difficulty === 'HARD');
+    return COUNTRIES.filter(c => c.difficulty === 'MEDIUM' || c.difficulty === 'HARD');
+  };
 
   // Daily Hints Tracking
   const [hintUsage, setHintUsage] = useState(() => {
@@ -90,27 +109,17 @@ export const MapGuesser: React.FC<MapGuesserProps> = ({ onHome, isOBS }) => {
   useEffect(() => { winnerRef.current = winner; }, [winner]);
 
   const startGame = () => {
-    // Filter based on difficulty and avoid played ones
-    let available = COUNTRIES.filter(c => {
-      if (playedCountries.includes(c.id)) return false;
-      if (difficulty === 'EASY') return c.difficulty === 'EASY';
-      if (difficulty === 'HARD') return c.difficulty === 'HARD';
-      if (difficulty === 'MEDIUM') return c.difficulty === 'MEDIUM' || (c.difficulty === 'HARD' && Math.random() < 0.3);
-      return true;
-    });
+    const pool = getDifficultyPool(difficulty);
+    let available = pool.filter(c => !playedRef.current[difficulty].has(c.id));
 
     if (available.length === 0) {
-      // If all countries of this difficulty are played, reset the pool for this difficulty
-      available = COUNTRIES.filter(c => {
-        if (difficulty === 'EASY') return c.difficulty === 'EASY';
-        if (difficulty === 'HARD') return c.difficulty === 'HARD';
-        if (difficulty === 'MEDIUM') return c.difficulty === 'MEDIUM' || (c.difficulty === 'HARD' && Math.random() < 0.3);
-        return true;
-      });
-      setPlayedCountries([]);
+      // All countries of this difficulty were played → refresh its pool
+      playedRef.current[difficulty] = new Set();
+      available = pool;
     }
+
     const randomCountry = available[Math.floor(Math.random() * available.length)];
-    setPlayedCountries(prev => [...prev, randomCountry.id]);
+    playedRef.current[difficulty].add(randomCountry.id);
 
     setTargetCountry(randomCountry);
     setWinner(null);
@@ -128,7 +137,6 @@ export const MapGuesser: React.FC<MapGuesserProps> = ({ onHome, isOBS }) => {
     } else {
       setPhase('SETUP');
       setCurrentRound(1);
-      setPlayedCountries([]); // Reset when going back to setup
     }
   };
 
@@ -137,6 +145,14 @@ export const MapGuesser: React.FC<MapGuesserProps> = ({ onHome, isOBS }) => {
     if (difficulty === 'EASY') return baseZoom * 0.4;
     return baseZoom;
   };
+
+  // Visual effects are in SVG user-space which scales with the map zoom,
+  // so they must shrink as zoom grows to stay constant on screen.
+  const effectiveZoom = targetCountry ? getZoomLevel(targetCountry.zoom) : 1;
+  const glowBlur = 4 / Math.max(effectiveZoom, 0.1);
+  const targetStroke = targetCountry ? 0.6 / effectiveZoom : 0.6;
+  const winnerStroke = targetCountry ? 0.3 / effectiveZoom : 0.3;
+  const winnerGlow = targetCountry ? 5 / effectiveZoom : 15;
 
   useEffect(() => {
     const unsubscribe = chatService.onMessage((msg) => {
@@ -221,7 +237,7 @@ export const MapGuesser: React.FC<MapGuesserProps> = ({ onHome, isOBS }) => {
               خمن الدولة
             </h1>
             <p className="text-blue-300/80 text-2xl max-w-lg mx-auto font-medium">
-              سيتم تظليل دولة على الخريطة، أسرع شخص يكتب اسمها في الشات يفوز!
+              سيتم تظليل دولة على الخريطة، أسرع شخص يكتب اسمها في الشات يفوز! أكثر من {COUNTRIES.length} دولة بدون تكرار.
             </p>
           </div>
 
@@ -246,7 +262,7 @@ export const MapGuesser: React.FC<MapGuesserProps> = ({ onHome, isOBS }) => {
               <div className="grid grid-cols-3 gap-3">
                 {[
                   { id: 'EASY', label: 'سهل', desc: 'زوم خفيف ودول معروفة' },
-                  { id: 'MEDIUM', label: 'متوسط', desc: 'دول متنوعة' },
+                  { id: 'MEDIUM', label: 'متوسط', desc: 'تنوع كبير' },
                   { id: 'HARD', label: 'صعب', desc: 'دول صعبة ومجهولة' }
                 ].map(diff => (
                   <button
@@ -256,6 +272,9 @@ export const MapGuesser: React.FC<MapGuesserProps> = ({ onHome, isOBS }) => {
                   >
                     <span className="font-black text-lg">{diff.label}</span>
                     <span className="text-xs opacity-70">{diff.desc}</span>
+                    <span className={`text-xs font-black px-2 py-0.5 rounded-full ${difficulty === diff.id ? 'bg-white/20' : 'bg-blue-950/60'}`}>
+                      {difficultyCounts[diff.id as 'EASY' | 'MEDIUM' | 'HARD']} دولة
+                    </span>
                   </button>
                 ))}
               </div>
@@ -289,10 +308,9 @@ export const MapGuesser: React.FC<MapGuesserProps> = ({ onHome, isOBS }) => {
                   className="w-full h-full"
                 >
                   <defs>
-                    <filter id="glow-target" x="-50%" y="-50%" width="200%" height="200%">
-                      <feGaussianBlur stdDeviation="3" result="blur" />
+                    <filter id="glow-target" x="-100%" y="-100%" width="300%" height="300%" filterUnits="objectBoundingBox">
+                      <feGaussianBlur stdDeviation={glowBlur} result="blur" />
                       <feMerge>
-                        <feMergeNode in="blur" />
                         <feMergeNode in="blur" />
                         <feMergeNode in="SourceGraphic" />
                       </feMerge>
@@ -343,12 +361,12 @@ export const MapGuesser: React.FC<MapGuesserProps> = ({ onHome, isOBS }) => {
                                   geography={geo}
                                 fill={isTarget ? (winner ? "url(#flagPattern)" : "#3b82f6") : "#0f172a"} 
                                 stroke={isTarget ? (winner ? "#ffffff" : "#93c5fd") : "#1e293b"}
-                                strokeWidth={isTarget ? (winner ? 0.3 : 0.8) : (showFullMap ? 0.3 : 0.1)}
+                                strokeWidth={isTarget ? (winner ? winnerStroke : targetStroke) : (showFullMap ? 0.3 : 0.1)}
                                 style={{
                                   default: { 
                                     outline: "none", 
                                     filter: isTarget 
-                                      ? (winner ? "drop-shadow(0 0 15px rgba(255,255,255,0.4))" : "url(#glow-target)") 
+                                      ? (winner ? `drop-shadow(0 0 ${winnerGlow}px rgba(255,255,255,0.4))` : "url(#glow-target)") 
                                       : (showFullMap ? "none" : "brightness(0.3)"),
                                     transition: "all 1s ease-in-out"
                                   },
@@ -557,7 +575,7 @@ export const MapGuesser: React.FC<MapGuesserProps> = ({ onHome, isOBS }) => {
                             className="bg-gradient-to-br from-indigo-900/80 to-indigo-950/80 border border-indigo-500/50 p-4 rounded-2xl shadow-lg text-center flex flex-col justify-center items-center backdrop-blur-md"
                           >
                             <p className="text-indigo-300 text-xs font-bold mb-1 uppercase tracking-wider">أول حرف</p>
-                            <p className="text-4xl font-black text-white">"{targetCountry.nameAr.startsWith('ال') && targetCountry.nameAr !== 'الصومال' && targetCountry.nameAr !== 'الصين' ? targetCountry.nameAr[2] : targetCountry.nameAr[0]}"</p>
+                            <p className="text-4xl font-black text-white">"{targetCountry.nameAr.length > 2 && targetCountry.nameAr.startsWith('ال') ? targetCountry.nameAr[2] : targetCountry.nameAr[0]}"</p>
                           </motion.div>
                         )}
 

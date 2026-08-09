@@ -5,13 +5,23 @@ import { ChatMessage } from '../types';
 type MessageCallback = (message: ChatMessage) => void;
 type StatusCallback = (isConnected: boolean, error?: boolean, details?: string) => void;
 
-const getRoleFromIdentity = (identity: any): 'owner' | 'moderator' | 'vip' | 'user' => {
+const getRoleFromIdentity = (identity: any): ChatMessage['role'] => {
   if (!identity || !identity.badges) return 'user';
   const badges = identity.badges;
   if (badges.some((b: any) => b.type === 'broadcaster')) return 'owner';
   if (badges.some((b: any) => b.type === 'moderator')) return 'moderator';
+  if (badges.some((b: any) => b.type === 'founder')) return 'founder';
   if (badges.some((b: any) => b.type === 'vip')) return 'vip';
+  if (badges.some((b: any) => b.type === 'sub_gifter')) return 'gifter';
+  if (badges.some((b: any) => b.type === 'subscriber')) return 'subscriber';
   return 'user';
+};
+
+const mapBadges = (identity: any): ChatMessage['badges'] => {
+  if (!identity || !Array.isArray(identity.badges)) return [];
+  return identity.badges
+    .map((b: any) => ({ type: b.type, text: b.text }))
+    .filter((b: any) => typeof b.type === 'string' && b.type.length > 0);
 };
 
 class ChatService {
@@ -203,6 +213,7 @@ class ChatService {
           },
           content: data.content || '',
           role: getRoleFromIdentity(data.sender?.identity),
+          badges: mapBadges(data.sender?.identity),
           timestamp: Date.now()
         };
 
